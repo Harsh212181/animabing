@@ -72,6 +72,49 @@ const createAdmin = async () => {
 };
 createAdmin();
 
+// ✅ EMERGENCY ADMIN CREATION ROUTE - ADD THIS NEW ROUTE
+app.get('/api/admin/create-default-admin', async (req, res) => {
+  try {
+    const Admin = require('./models/Admin.cjs');
+    const bcrypt = require('bcryptjs');
+    
+    console.log('🆕 EMERGENCY: Creating default admin user...');
+    
+    // Delete existing admin if any
+    await Admin.deleteMany({ username: 'Hellobrother' });
+    
+    // Create new admin
+    const hashedPassword = await bcrypt.hash('Anime2121818144', 10);
+    const admin = new Admin({
+      username: 'Hellobrother',
+      password: hashedPassword,
+      email: 'admin@animabing.com',
+      role: 'admin'
+    });
+    
+    await admin.save();
+    
+    console.log('✅ EMERGENCY ADMIN CREATED:', admin.username);
+    
+    res.json({ 
+      success: true, 
+      message: '✅ EMERGENCY: Admin created successfully!',
+      credentials: {
+        username: 'Hellobrother',
+        password: 'Anime2121818144'
+      },
+      instructions: 'Use these credentials to login at your frontend admin panel'
+    });
+  } catch (error) {
+    console.error('❌ EMERGENCY Admin creation error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
+});
+
 // ✅ IMPORT MIDDLEWARE AND ROUTES
 const adminAuth = require('./middleware/adminAuth.cjs');
 const animeRoutes = require('./routes/animeRoutes.cjs');
