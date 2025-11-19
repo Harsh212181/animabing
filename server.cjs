@@ -33,7 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ AUTO-CREATE ADMIN
+// ✅ FIXED ADMIN CREATION FUNCTION
 const createAdmin = async () => {
   try {
     const Admin = require('./models/Admin.cjs');
@@ -42,35 +42,123 @@ const createAdmin = async () => {
     const username = process.env.ADMIN_USER || 'Hellobrother';
     const password = process.env.ADMIN_PASS || 'Anime2121818144';
     
+    console.log('🔄 Checking admin user...');
+    
     let admin = await Admin.findOne({ username });
     
     if (!admin) {
       console.log('🆕 Creating new admin user...');
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
       admin = await Admin.create({
         username: username,
         password: hashedPassword,
-        email: 'admin@animabing.com'
+        email: 'admin@animabing.com',
+        role: 'admin'
       });
-      console.log('✅ Admin user created:', username);
+      
+      console.log('✅ Admin user created successfully!');
     } else {
-      console.log('✅ Admin exists:', username);
-      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log('✅ Admin user already exists');
+      
+      // Update password to ensure it's correct
+      const hashedPassword = await bcrypt.hash(password, 12);
       admin.password = hashedPassword;
       await admin.save();
-      console.log('🔁 Admin password verified and updated');
+      console.log('🔁 Admin password updated');
     }
     
-    console.log('🔑 Login Credentials:');
+    console.log('=================================');
+    console.log('🔑 ADMIN LOGIN CREDENTIALS:');
     console.log('   Username:', username);
     console.log('   Password:', password);
-    console.log('   Use these to login at: http://localhost:5173');
+    console.log('   Login URL: http://localhost:5173');
+    console.log('   Press Ctrl+Shift+Alt for admin button');
+    console.log('=================================');
     
   } catch (err) {
-    console.error('❌ Admin creation error:', err.message);
+    console.error('❌ ADMIN CREATION ERROR:', err);
+    console.log('💡 TROUBLESHOOTING:');
+    console.log('1. Check MongoDB connection');
+    console.log('2. Check bcrypt installation: npm install bcryptjs');
+    console.log('3. Check environment variables in .env file');
   }
 };
 createAdmin();
+
+// ✅ EMERGENCY ADMIN RESET ROUTE - ADD THIS TO server.cjs
+app.get('/api/admin/emergency-reset', async (req, res) => {
+  try {
+    const Admin = require('./models/Admin.cjs');
+    const bcrypt = require('bcryptjs');
+    
+    console.log('🆕 EMERGENCY ADMIN RESET INITIATED...');
+    
+    // Delete any existing admin
+    await Admin.deleteMany({});
+    console.log('✅ Cleared existing admin users');
+    
+    // Create new admin with hashed password
+    const hashedPassword = await bcrypt.hash('Anime2121818144', 12);
+    const admin = new Admin({
+      username: 'Hellobrother',
+      password: hashedPassword,
+      email: 'admin@animabing.com',
+      role: 'superadmin'
+    });
+    
+    await admin.save();
+    console.log('✅ EMERGENCY ADMIN CREATED SUCCESSFULLY!');
+    
+    res.json({ 
+      success: true, 
+      message: '✅ EMERGENCY: Admin account created successfully!',
+      credentials: {
+        username: 'Hellobrother',
+        password: 'Anime2121818144'
+      },
+      instructions: 'Use these credentials to login at /admin route'
+    });
+    
+  } catch (error) {
+    console.error('❌ EMERGENCY ADMIN RESET ERROR:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: 'Check MongoDB connection and bcrypt installation'
+    });
+  }
+});
+
+// ✅ ADMIN DEBUG ROUTE
+app.get('/api/admin/debug', async (req, res) => {
+  try {
+    const Admin = require('./models/Admin.cjs');
+    
+    const adminCount = await Admin.countDocuments();
+    const allAdmins = await Admin.find().select('username email createdAt');
+    
+    console.log('🔍 ADMIN DEBUG INFO:');
+    console.log('Total Admins:', adminCount);
+    console.log('Admin List:', allAdmins);
+    
+    res.json({
+      success: true,
+      totalAdmins: adminCount,
+      admins: allAdmins,
+      serverTime: new Date().toISOString(),
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV || 'development'
+    });
+    
+  } catch (error) {
+    console.error('Admin debug error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
 
 // ✅ EMERGENCY ADMIN CREATION ROUTE - ADD THIS NEW ROUTE
 app.get('/api/admin/create-default-admin', async (req, res) => {
@@ -84,7 +172,7 @@ app.get('/api/admin/create-default-admin', async (req, res) => {
     await Admin.deleteMany({ username: 'Hellobrother' });
     
     // Create new admin
-    const hashedPassword = await bcrypt.hash('Anime2121818144', 10);
+    const hashedPassword = await bcrypt.hash('Anime2121818144', 12);
     const admin = new Admin({
       username: 'Hellobrother',
       password: hashedPassword,
@@ -126,62 +214,79 @@ const appDownloadRoutes = require('./routes/appDownloadRoutes.cjs');
 const adRoutes = require('./routes/adRoutes.cjs');
 const adminRoutes = require('./routes/adminRoutes.cjs');
 
-// ✅ ADMIN LOGIN ROUTE
+// ✅ FIXED ADMIN LOGIN ROUTE
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
     console.log('\n🔐 LOGIN ATTEMPT:', { 
       username, 
-      password: password ? '***' : 'missing',
+      hasPassword: !!password,
       timestamp: new Date().toISOString()
     });
     
+    // Input validation
     if (!username || !password) {
-      console.log('❌ Missing username or password');
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Username and password required' 
+      });
     }
 
     const Admin = require('./models/Admin.cjs');
     const bcrypt = require('bcryptjs');
     
-    console.log('🔍 Looking for admin in database...');
+    // Find admin
     const admin = await Admin.findOne({ username });
-    console.log('👤 Admin found:', admin ? 'Yes' : 'No');
-    
     if (!admin) {
-      console.log('❌ Admin not found for username:', username);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      console.log('❌ Admin not found:', username);
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid username or password' 
+      });
     }
 
-    console.log('🔑 Comparing passwords...');
+    console.log('🔑 Admin found, comparing passwords...');
+    
+    // Compare passwords
     const isMatch = await bcrypt.compare(password, admin.password);
-    console.log('✅ Password match result:', isMatch);
+    console.log('✅ Password match:', isMatch);
     
     if (!isMatch) {
-      console.log('❌ Password does not match for user:', username);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid username or password' 
+      });
     }
 
+    // Generate JWT token
     const jwt = require('jsonwebtoken');
     const token = jwt.sign(
-      { id: admin._id, username: admin.username }, 
+      { 
+        id: admin._id, 
+        username: admin.username,
+        role: admin.role 
+      }, 
       process.env.JWT_SECRET || 'supersecretkey', 
       { expiresIn: '24h' }
     );
 
-    console.log('🎉 LOGIN SUCCESSFUL for user:', username);
-    console.log('✅ Token generated successfully');
+    console.log('🎉 LOGIN SUCCESSFUL for:', username);
     
     res.json({ 
       success: true, 
       message: 'Login successful', 
       token, 
-      username: admin.username 
+      username: admin.username,
+      role: admin.role
     });
+    
   } catch (err) {
     console.error('❌ Login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error during login' 
+    });
   }
 });
 
