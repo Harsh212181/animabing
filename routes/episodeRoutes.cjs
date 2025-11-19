@@ -1,4 +1,4 @@
- // routes/episodeRoutes.cjs - CLEANED VERSION
+ // routes/episodeRoutes.cjs - VALIDATION COMPLETELY REMOVED
 const express = require('express');
 const router = express.Router();
 const Episode = require('../models/Episode.cjs');
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/episodes -> ADD NEW EPISODE (MANUAL SHORTENING)
+// POST /api/episodes -> ADD NEW EPISODE (NO VALIDATION)
 router.post('/', async (req, res) => {
   try {
     const { animeId, title, episodeNumber, secureFileReference, cutyLink, session } = req.body;
@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
       title: title || `Episode ${episodeNumber}`,
       episodeNumber: Number(episodeNumber),
       secureFileReference: secureFileReference || null,
-      cutyLink: cutyLink, // Use provided cutyLink directly
+      cutyLink: cutyLink || '', // ✅ CUTYLINK KO EMPTY ALLOW KARO
       session: session || 1
     });
 
@@ -116,7 +116,7 @@ router.get('/:animeId', async (req, res) => {
   }
 });
 
-// PATCH /api/episodes -> UPDATE EPISODE (MANUAL SHORTENING)
+// PATCH /api/episodes -> UPDATE EPISODE (NO VALIDATION)
 router.patch('/', async (req, res) => {
   try {
     const { animeId, episodeNumber, title, secureFileReference, cutyLink, session } = req.body;
@@ -140,7 +140,7 @@ router.patch('/', async (req, res) => {
     const update = {};
     if (typeof title !== 'undefined') update.title = title;
     if (typeof secureFileReference !== 'undefined') update.secureFileReference = secureFileReference;
-    if (typeof cutyLink !== 'undefined') update.cutyLink = cutyLink; // Use provided cutyLink directly
+    if (typeof cutyLink !== 'undefined') update.cutyLink = cutyLink; // ✅ NO VALIDATION
     if (typeof session !== 'undefined') update.session = session;
 
     const updated = await Episode.findOneAndUpdate(query, { $set: update }, { new: true });
