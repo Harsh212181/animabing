@@ -1,7 +1,7 @@
  // services/animeService.ts - CORRECTED VERSION
 import type { Anime } from '../src/types';
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://animabing.onrender.com/api';
 
 console.log('🔧 API Base URL:', API_BASE);
 
@@ -76,6 +76,11 @@ export const searchAnime = async (query: string): Promise<Anime[]> => {
 export const getAnimeById = async (id: string): Promise<Anime | null> => {
   try {
     const response = await fetch(`${API_BASE}/anime/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const result = await response.json();
     
     if (result.success && result.data) {
@@ -86,7 +91,45 @@ export const getAnimeById = async (id: string): Promise<Anime | null> => {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching anime by id:', error);
+    console.error('❌ Error fetching anime by id:', error);
     return null;
+  }
+};
+
+export const getEpisodesByAnimeId = async (animeId: string): Promise<any[]> => {
+  try {
+    console.log('📺 Fetching episodes for anime:', animeId);
+    
+    const response = await fetch(`${API_BASE}/episodes/${animeId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const episodes = await response.json();
+    console.log(`✅ Found ${episodes.length} episodes for anime ${animeId}`);
+    return episodes;
+  } catch (error) {
+    console.error('❌ Error fetching episodes:', error);
+    return [];
+  }
+};
+
+export const getChaptersByMangaId = async (mangaId: string): Promise<any[]> => {
+  try {
+    console.log('📖 Fetching chapters for manga:', mangaId);
+    
+    const response = await fetch(`${API_BASE}/chapters/${mangaId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const chapters = await response.json();
+    console.log(`✅ Found ${chapters.length} chapters for manga ${mangaId}`);
+    return chapters;
+  } catch (error) {
+    console.error('❌ Error fetching chapters:', error);
+    return [];
   }
 };
