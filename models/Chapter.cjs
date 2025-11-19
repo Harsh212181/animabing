@@ -1,4 +1,4 @@
-// models/Chapter.cjs - NEW FILE
+ // models/Chapter.cjs - CORRECTED VERSION
 const mongoose = require("mongoose");
 
 const chapterSchema = new mongoose.Schema({
@@ -25,13 +25,8 @@ const chapterSchema = new mongoose.Schema({
   },
   cutyLink: {
     type: String,
-    required: true,
-    validate: {
-      validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
-      },
-      message: 'Invalid URL format'
-    }
+    default: "", // ✅ REQUIRED HATA DO, DEFAULT EMPTY STRING
+    // ✅ VALIDATION COMPLETELY REMOVED
   },
   secureFileReference: String
 }, {
