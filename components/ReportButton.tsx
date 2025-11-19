@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // ✅ CORRECT API BASE URL
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
+const API_BASE = 'https://animabing.onrender.com/api';
 
 interface ReportButtonProps {
   animeId: string;
