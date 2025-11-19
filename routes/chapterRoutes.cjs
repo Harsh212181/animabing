@@ -1,4 +1,4 @@
- // routes/chapterRoutes.cjs - CLEANED VERSION
+ // routes/chapterRoutes.cjs - VALIDATION COMPLETELY REMOVED
 const express = require('express');
 const router = express.Router();
 const Chapter = require('../models/Chapter.cjs');
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/chapters -> ADD NEW CHAPTER (MANUAL SHORTENING)
+// POST /api/chapters -> ADD NEW CHAPTER (NO VALIDATION)
 router.post('/', async (req, res) => {
   try {
     const { mangaId, title, chapterNumber, secureFileReference, cutyLink, session } = req.body;
@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
       title: title || `Chapter ${chapterNumber}`,
       chapterNumber: Number(chapterNumber),
       secureFileReference: secureFileReference || null,
-      cutyLink: cutyLink, // Use provided cutyLink directly
+      cutyLink: cutyLink || '', // ✅ CUTYLINK KO EMPTY ALLOW KARO
       session: session || 1
     });
 
@@ -116,7 +116,7 @@ router.get('/:mangaId', async (req, res) => {
   }
 });
 
-// PATCH /api/chapters -> UPDATE CHAPTER (MANUAL SHORTENING)
+// PATCH /api/chapters -> UPDATE CHAPTER (NO VALIDATION)
 router.patch('/', async (req, res) => {
   try {
     const { mangaId, chapterNumber, title, secureFileReference, cutyLink, session } = req.body;
@@ -140,7 +140,7 @@ router.patch('/', async (req, res) => {
     const update = {};
     if (typeof title !== 'undefined') update.title = title;
     if (typeof secureFileReference !== 'undefined') update.secureFileReference = secureFileReference;
-    if (typeof cutyLink !== 'undefined') update.cutyLink = cutyLink; // Use provided cutyLink directly
+    if (typeof cutyLink !== 'undefined') update.cutyLink = cutyLink; // ✅ NO VALIDATION
     if (typeof session !== 'undefined') update.session = session;
 
     const updated = await Chapter.findOneAndUpdate(query, { $set: update }, { new: true });
