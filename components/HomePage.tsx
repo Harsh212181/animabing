@@ -123,11 +123,6 @@ const HomePage: React.FC<Props> = ({
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-white">
           {contentType === 'All' ? 'Latest Content' : `Latest ${contentType}`}
-          {filteredAnime.length > 0 && (
-            <span className="text-slate-400 text-lg ml-2">
-              ({filteredAnime.length} items)
-            </span>
-          )}
         </h1>
       </div>
 
