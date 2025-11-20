@@ -322,51 +322,48 @@ app.post('/api/admin/protected/track-ad-click', adminAuth, async (req, res) => {
   }
 });
 
-// ✅ MISSING ROUTES - ADDED
-app.get('/api/app-downloads', async (req, res) => {
-  try {
-    console.log('📱 Fetching app downloads...');
-    // Temporary empty response
-    res.json([]);
-  } catch (error) {
-    console.error('App downloads error:', error);
-    res.json([]);
-  }
-});
-
+// ✅ Social media API
 app.get('/api/social', async (req, res) => {
   try {
-    console.log('🔗 Fetching social links...');
-    // Temporary default social links
+    const SocialMedia = require('./models/SocialMedia.cjs');
+    const socialLinks = await SocialMedia.find({ isActive: true });
+    res.json(socialLinks);
+  } catch (error) {
+    console.error('Social media API error:', error);
     res.json([
       {
         platform: 'facebook',
-        url: '#',
-        isActive: false
+        url: 'https://facebook.com/animabing',
+        isActive: true,
+        icon: 'facebook',
+        displayName: 'Facebook'
       },
       {
-        platform: 'twitter', 
-        url: '#', 
-        isActive: false
-      },
-      {
-        platform: 'instagram',
-        url: '#', 
-        isActive: false
+        platform: 'instagram', 
+        url: 'https://instagram.com/animabing',
+        isActive: true,
+        icon: 'instagram',
+        displayName: 'Instagram'
       },
       {
         platform: 'telegram',
-        url: '#',
-        isActive: false  
-      },
-      {
-        platform: 'discord',
-        url: '#',
-        isActive: false
+        url: 'https://t.me/animabing', 
+        isActive: true,
+        icon: 'telegram',
+        displayName: 'Telegram'
       }
     ]);
+  }
+});
+
+// ✅ App downloads API
+app.get('/api/app-downloads', async (req, res) => {
+  try {
+    const AppDownload = require('./models/AppDownload.cjs');
+    const appDownloads = await AppDownload.find({ isActive: true });
+    res.json(appDownloads);
   } catch (error) {
-    console.error('Social links error:', error);
+    console.error('App downloads API error:', error);
     res.json([]);
   }
 });
