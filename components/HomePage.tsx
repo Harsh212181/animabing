@@ -1,4 +1,4 @@
- // components/HomePage.tsx - CORRECTED VERSION
+ // components/HomePage.tsx - CLEAN VERSION
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -27,16 +27,11 @@ const HomePage: React.FC<Props> = ({
   useEffect(() => {
     const loadInitialAnime = async () => {
       try {
-        console.log('🏠 HomePage: Initial load starting...');
         setIsLoading(true);
         setError(null);
-        
         const data = await getAllAnime();
-        console.log('🏠 HomePage: Initial data loaded:', data.length, 'items');
-        
         setAnimeList(data);
       } catch (err) {
-        console.error('🏠 HomePage: Initial load error:', err);
         setError('Failed to load anime data');
       } finally {
         setIsLoading(false);
@@ -44,49 +39,34 @@ const HomePage: React.FC<Props> = ({
     };
 
     loadInitialAnime();
-  }, []); // ✅ EMPTY DEPENDENCY - ONLY RUN ONCE
+  }, []);
 
   // ✅ SEARCH EFFECT - RUNS WHEN searchQuery CHANGES
   useEffect(() => {
     const performSearch = async () => {
       if (searchQuery.trim() === '') {
-        // Empty search - reload all anime
-        console.log('🏠 HomePage: Empty search, reloading all anime');
         const data = await getAllAnime();
         setAnimeList(data);
         return;
       }
 
       try {
-        console.log('🏠 HomePage: Performing search for:', searchQuery);
         setIsLoading(true);
-        
         const data = await searchAnime(searchQuery);
-        console.log('🏠 HomePage: Search results:', data.length, 'items');
-        
         setAnimeList(data);
       } catch (err) {
-        console.error('🏠 HomePage: Search error:', err);
         setError('Search failed');
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Debounce search
     const timeoutId = setTimeout(performSearch, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
   // ✅ FILTER ANIME BASED ON CURRENT STATE
   const filteredAnime = useMemo(() => {
-    console.log('🏠 HomePage: Filtering anime...', {
-      total: animeList.length,
-      searchQuery,
-      filter,
-      contentType
-    });
-
     let filtered = [...animeList];
 
     // Content type filter
@@ -103,7 +83,6 @@ const HomePage: React.FC<Props> = ({
       );
     }
 
-    console.log('🏠 HomePage: After filtering:', filtered.length, 'items');
     return filtered;
   }, [animeList, filter, contentType]);
 
@@ -138,8 +117,6 @@ const HomePage: React.FC<Props> = ({
       </div>
     );
   }
-
-  console.log('🏠 HomePage: Rendering with', filteredAnime.length, 'anime');
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -152,18 +129,6 @@ const HomePage: React.FC<Props> = ({
             </span>
           )}
         </h1>
-      </div>
-
-      {/* Debug Info */}
-      <div className="bg-slate-800/50 p-4 rounded-lg mb-6">
-        <h3 className="text-yellow-400 font-semibold mb-2">🔍 Debug Info:</h3>
-        <p className="text-slate-300 text-sm">
-          Total Anime: {animeList.length} | 
-          Showing: {filteredAnime.length} | 
-          Search: "{searchQuery}" | 
-          Filter: {filter} | 
-          Type: {contentType}
-        </p>
       </div>
 
       {filteredAnime.length === 0 ? (
