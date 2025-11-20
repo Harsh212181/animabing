@@ -1,4 +1,4 @@
- // components/AnimeDetailPage.tsx - COLORFUL DESIGN
+ // components/AnimeDetailPage.tsx - IMPROVED DESIGN
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode } from '../src/types';
 import ReportButton from './ReportButton';
@@ -94,34 +94,55 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack }) => {
                 {anime.description}
               </p>
 
-              {/* Info Tags - Colorful Version */}
-              <div className="flex flex-wrap gap-3 mb-6">
-                <span className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium">
-                  Status: {anime.status}
-                </span>
-                <span className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium">
-                  Year: {anime.releaseYear}
-                </span>
-                <span className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium">
-                  Type: {anime.contentType}
-                </span>
-                <span className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium">
-                  Audio: {anime.subDubStatus}
-                </span>
-              </div>
+              {/* Info Section - Better Design */}
+              <div className="space-y-4 mb-6">
+                {/* Main Info Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                    <p className="text-slate-400 text-sm font-medium mb-1">Status</p>
+                    <p className="text-white font-semibold">{anime.status}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                    <p className="text-slate-400 text-sm font-medium mb-1">Release Year</p>
+                    <p className="text-white font-semibold">{anime.releaseYear}</p>
+                  </div>
+                </div>
 
-              {/* Genres */}
-              <div className="mb-6">
-                <p className="text-slate-400 text-sm font-medium mb-3">Genres</p>
-                <div className="flex flex-wrap gap-2">
-                  {anime.genreList?.map((genre, index) => (
-                    <span
-                      key={index}
-                      className="bg-pink-600 text-white px-3 py-1 rounded-md text-sm font-medium"
-                    >
-                      {genre}
-                    </span>
-                  ))}
+                {/* Type and Audio Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                    <p className="text-slate-400 text-sm font-medium mb-1">Type</p>
+                    <p className="text-white font-semibold">{anime.contentType}</p>
+                  </div>
+                  <div className={`rounded-lg p-4 border ${
+                    anime.subDubStatus === 'Hindi Dub' 
+                      ? 'bg-green-600/20 border-green-500/30' 
+                      : 'bg-red-600/20 border-red-500/30'
+                  }`}>
+                    <p className="text-slate-400 text-sm font-medium mb-1">Audio</p>
+                    <p className={`font-semibold ${
+                      anime.subDubStatus === 'Hindi Dub' 
+                        ? 'text-green-400' 
+                        : 'text-red-400'
+                    }`}>
+                      {anime.subDubStatus}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Genres */}
+                <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                  <p className="text-slate-400 text-sm font-medium mb-3">Genres</p>
+                  <div className="flex flex-wrap gap-2">
+                    {anime.genreList?.map((genre, index) => (
+                      <span
+                        key={index}
+                        className="bg-purple-600/80 hover:bg-purple-500 text-white px-3 py-1 rounded-md text-sm transition-colors"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -141,7 +162,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack }) => {
           )}
 
           {error && !isLoading && (
-            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-4">
+            <div className="bg-red-600/20 border border-red-500/30 rounded-lg p-4 mb-4">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
@@ -162,7 +183,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack }) => {
                   .map((episode, index) => (
                     <div
                       key={episode._id || index}
-                      className="bg-slate-700 hover:bg-slate-600 rounded-lg p-4 transition-colors duration-300 border border-slate-600"
+                      className="bg-slate-700/50 hover:bg-slate-600/50 rounded-lg p-4 transition-all duration-300 border border-slate-600 hover:border-purple-500/30"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -171,7 +192,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack }) => {
                               EP {episode.episodeNumber}
                             </span>
                             {episode.session > 1 && (
-                              <span className="bg-slate-600 text-slate-300 px-3 py-1 rounded text-sm font-medium">
+                              <span className="bg-slate-600 text-slate-300 px-3 py-1 rounded text-sm">
                                 Session {episode.session}
                               </span>
                             )}
@@ -190,7 +211,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack }) => {
                                 alert(`Episode ${episode.episodeNumber} - Watch link will be added soon!`);
                               }
                             }}
-                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded transition-colors duration-300 flex items-center gap-2 font-medium"
+                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded transition-colors duration-300 font-medium"
                           >
                             Watch
                           </button>
