@@ -1,8 +1,8 @@
- // components/ReportButton.tsx - API BASE URL CORRECT KARO
-import React, { useState, useEffect } from 'react';
+ // components/ReportButton.tsx - ENHANCED VERSION
+import React, { useState } from 'react';
 import axios from 'axios';
+import { createPortal } from "react-dom";
 
-// ✅ CORRECT API BASE URL
 const API_BASE = 'https://animabing.onrender.com/api';
 
 interface ReportButtonProps {
@@ -29,7 +29,6 @@ const ReportButton: React.FC<ReportButtonProps> = ({
   const handleButtonClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('🚨 Report button clicked - opening modal');
     setShowModal(true);
   };
 
@@ -37,29 +36,17 @@ const ReportButton: React.FC<ReportButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    if (!issueType) {
-      setMessage('Please select an issue type');
-      return;
-    }
-
-    // Client-side validation
-    if (!description || description.trim().length < 10) {
-      setMessage('❌ Please provide detailed description (at least 10 characters)');
-      return;
-    }
-
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setMessage('❌ Please enter a valid email address');
-      return;
-    }
+    if (!issueType) return setMessage('Please select an issue type');
+    if (!description || description.trim().length < 10)
+      return setMessage('❌ Description must be at least 10 characters');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return setMessage('❌ Invalid email');
 
     setIsSubmitting(true);
     setMessage('');
 
     try {
-      console.log('📤 SUBMITTING TO:', `${API_BASE}/reports`);
-      
-      const response = await axios.post(`${API_BASE}/reports`, {
+      const res = await axios.post(`${API_BASE}/reports`, {
         animeId,
         episodeId: episodeId || null,
         episodeNumber: episodeNumber || null,
@@ -69,10 +56,8 @@ const ReportButton: React.FC<ReportButtonProps> = ({
         username: username || 'Anonymous'
       });
 
-      console.log('✅ REPORT RESPONSE:', response.data);
-
-      if (response.data.success) {
-        setMessage('✅ Report submitted successfully! We will contact you soon.');
+      if (res.data.success) {
+        setMessage('✅ Report submitted successfully!');
         setTimeout(() => {
           setShowModal(false);
           setMessage('');
@@ -80,173 +65,190 @@ const ReportButton: React.FC<ReportButtonProps> = ({
           setDescription('');
           setEmail('');
           setUsername('');
-        }, 3000);
+        }, 2500);
       }
-    } catch (error: any) {
-      console.error('❌ REPORT ERROR:', error);
-      
-      if (error.response?.data?.error) {
-        setMessage(`❌ ${error.response.data.error}`);
-      } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-        setMessage('❌ Network error: Cannot connect to server. Please check if server is running.');
-      } else {
-        setMessage('❌ Failed to submit report. Please try again.');
-      }
-    } finally {
-      setIsSubmitting(false);
+
+    } catch (err: any) {
+      setMessage('❌ Failed to submit report. Please try again.');
     }
+
+    setIsSubmitting(false);
   };
 
-  // ... rest of the code same as before
+  const handleClose = () => {
+    setShowModal(false);
+    setTimeout(() => {
+      setMessage('');
+      setIssueType('');
+      setDescription('');
+      setEmail('');
+      setUsername('');
+    }, 300);
+  };
+
   return (
     <>
+      {/* Enhanced icon button */}
       <button
         onClick={handleButtonClick}
-        className="bg-red-600 hover:bg-red-500 text-white p-1.5 rounded transition-colors flex items-center justify-center"
+        className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white p-2 rounded-lg shadow-lg hover:shadow-red-500/20 transition-all duration-200 group relative"
         title="Report Issue"
-        type="button"
       >
-        <span className="text-xs">🚨</span>
+        <span className="text-sm transition-transform group-hover:scale-110">🚨</span>
+        {/* Tooltip */}
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+          Report Issue
+        </div>
       </button>
 
-      {showModal && (
-        <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-fade-in backdrop-blur-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (e.target === e.currentTarget) setShowModal(false);
-          }}
-        >
-          <div 
-            className="bg-slate-900 border border-slate-700 p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 transform animate-scale-in max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-white mb-2">Report Issue</h3>
-            <p className="text-slate-300 mb-4 text-sm">
-              {animeTitle} {episodeNumber ? `- Episode ${episodeNumber}` : ''}
-            </p>
+      {/* ENHANCED MODAL WITH BETTER STYLING */}
+      {showModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Animated Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+              onClick={handleClose}
+            />
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Contact Information Section */}
-              <div className="bg-blue-600/20 p-4 rounded-lg border border-blue-500/30">
-                <h4 className="text-blue-400 text-sm font-semibold mb-2">Contact Information (Optional)</h4>
-                
-                <div className="space-y-3">
+            {/* Enhanced Center Popup */}
+            <div className="relative bg-gradient-to-br from-slate-900 to-slate-800 w-full max-w-md rounded-2xl shadow-2xl border border-slate-700/50 p-6 z-[10000] max-h-[85vh] overflow-y-auto animate-in fade-in-90 zoom-in-90 duration-300">
+              
+              {/* Enhanced Header */}
+              <div className="flex justify-between items-start border-b border-slate-700/50 pb-4 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    Report Issue
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-1">
+                    {animeTitle} {episodeNumber ? ` - Episode ${episodeNumber}` : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={handleClose}
+                  className="text-slate-400 hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700/50 transition-colors duration-200"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Enhanced Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+
+                {/* Optional Fields Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Email Address
+                    <label className="text-sm font-medium text-slate-300 mb-1.5 block">
+                      Email <span className="text-slate-500 text-xs">(optional)</span>
                     </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
+                      className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-3 py-2.5 text-sm transition-all duration-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-slate-800/70 placeholder-slate-500"
                       placeholder="your@email.com"
                     />
-                    <p className="text-slate-400 text-xs mt-1">
-                      We'll contact you when issue is fixed
-                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Username
+                    <label className="text-sm font-medium text-slate-300 mb-1.5 block">
+                      Username <span className="text-slate-500 text-xs">(optional)</span>
                     </label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
-                      placeholder="Your username (optional)"
+                      className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-3 py-2.5 text-sm transition-all duration-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-slate-800/70 placeholder-slate-500"
+                      placeholder="Anonymous"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Issue Type */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Issue Type *
-                </label>
-                <select
-                  value={issueType}
-                  onChange={(e) => setIssueType(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                  required
-                >
-                  <option value="">Select Issue Type</option>
-                  <option value="Link Not Working">Download Link Not Working</option>
-                  <option value="Wrong Episode">Wrong Episode Content</option>
-                  <option value="Poor Quality">Poor Video Quality</option>
-                  <option value="Audio Issue">Audio Problem</option>
-                  <option value="Subtitle Issue">Subtitle Problem</option>
-                  <option value="Other">Other Issue</option>
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Issue Description *
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors h-24"
-                  placeholder="Please describe the issue in detail (minimum 10 characters)..."
-                  required
-                />
-                <p className="text-slate-400 text-xs mt-1">
-                  {description.length}/10 characters (minimum 10 required)
-                </p>
-              </div>
-
-              {/* Message Display */}
-              {message && (
-                <div className={`p-3 rounded-lg text-sm ${
-                  message.includes('✅') 
-                    ? 'bg-green-600/20 text-green-400 border border-green-500/30' 
-                    : 'bg-red-600/20 text-red-400 border border-red-500/30'
-                }`}>
-                  {message}
+                {/* Issue Type */}
+                <div>
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 block">
+                    Issue Type <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={issueType}
+                    onChange={(e) => setIssueType(e.target.value)}
+                    className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-3 py-2.5 text-sm transition-all duration-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-slate-800/70 appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-slate-800">Select Issue Type</option>
+                    <option value="Link Not Working" className="bg-slate-800">Download Link Not Working</option>
+                    <option value="Wrong Episode" className="bg-slate-800">Wrong Episode Content</option>
+                    <option value="Poor Quality" className="bg-slate-800">Poor Video Quality</option>
+                    <option value="Audio Issue" className="bg-slate-800">Audio Issue</option>
+                    <option value="Subtitle Issue" className="bg-slate-800">Subtitle Issue</option>
+                    <option value="Other" className="bg-slate-800">Other Issue</option>
+                  </select>
                 </div>
-              )}
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-2">
+                {/* Description */}
+                <div>
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 block">
+                    Description <span className="text-red-400">*</span>
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-3 py-2.5 text-sm transition-all duration-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-slate-800/70 placeholder-slate-500 resize-none h-24"
+                    placeholder="Please describe the issue in detail..."
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className={`text-xs ${description.length >= 10 ? 'text-green-400' : 'text-slate-500'}`}>
+                      {description.length >= 10 ? '✓' : '●'} {description.length}/10 characters
+                    </span>
+                    <span className="text-slate-500 text-xs">Minimum 10 characters</span>
+                  </div>
+                </div>
+
+                {/* Message Display */}
+                {message && (
+                  <div
+                    className={`p-3 rounded-xl border text-sm transition-all duration-300 ${
+                      message.includes("✅")
+                        ? "bg-green-500/10 border-green-500/30 text-green-400"
+                        : "bg-red-500/10 border-red-500/30 text-red-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">
+                        {message.includes("✅") ? "✅" : "❌"}
+                      </span>
+                      <span>{message.replace(/[✅❌]/g, '')}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
                 <button
-                  type="submit"
                   disabled={isSubmitting}
-                  className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex-1 flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:from-slate-700 disabled:to-slate-700 text-white py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Submitting...
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Submitting Report...
                     </>
                   ) : (
-                    'Submit Report'
+                    <>
+                      <span>🚨</span>
+                      Submit Report
+                    </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
 
-              {/* Help Text */}
-              <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-600">
-                <p className="text-slate-400 text-xs text-center">
-                  💡 We typically resolve issues within 24 hours
+                {/* Help Text */}
+                <p className="text-center text-slate-500 text-xs">
+                  We'll review your report and fix the issue as soon as possible
                 </p>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
