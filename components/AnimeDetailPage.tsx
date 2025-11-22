@@ -1,4 +1,4 @@
-  // components/AnimeDetailPage.tsx - UPDATED FOR LONG TITLES AND NO GAPS
+  // components/AnimeDetailPage.tsx - UPDATED SESSION EPISODE COUNT
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -252,8 +252,8 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
           <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 mt-3 border border-slate-700 shadow-xl">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-bold text-white">
-                {isManga ? 'Chapters' : 'Episodes'} 
-                {(isManga ? chapters : episodes).length > 0 && ` (${(isManga ? chapters : episodes).length})`}
+                {isManga ? 'Chapters' : 'Episodes'}
+                {currentSessionItems.length > 0 && ` (${currentSessionItems.length})`}
               </h2>
             </div>
 
@@ -428,8 +428,8 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
           <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                {isManga ? 'Chapters' : 'Episodes'} 
-                {(isManga ? chapters : episodes).length > 0 && ` (${(isManga ? chapters : episodes).length})`}
+                {isManga ? 'Chapters' : 'Episodes'}
+                {currentSessionItems.length > 0 && ` (${currentSessionItems.length})`}
               </h2>
               
               {/* Session Selector */}
