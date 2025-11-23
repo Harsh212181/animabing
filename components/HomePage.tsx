@@ -1,4 +1,4 @@
- // components/HomePage.tsx - CLEAN VERSION
+  // components/HomePage.tsx - FIXED SORTING VERSION
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -30,7 +30,12 @@ const HomePage: React.FC<Props> = ({
         setIsLoading(true);
         setError(null);
         const data = await getAllAnime();
-        setAnimeList(data);
+        
+        // ✅ FIXED: Simple array reverse - newest items will be first
+        // Since your API returns items in the order they were added to database
+        // Reversing the array will show newest items first
+        const reversedData = [...data].reverse();
+        setAnimeList(reversedData);
       } catch (err) {
         setError('Failed to load anime data');
       } finally {
@@ -46,14 +51,18 @@ const HomePage: React.FC<Props> = ({
     const performSearch = async () => {
       if (searchQuery.trim() === '') {
         const data = await getAllAnime();
-        setAnimeList(data);
+        // ✅ FIXED: Simple array reverse for search results too
+        const reversedData = [...data].reverse();
+        setAnimeList(reversedData);
         return;
       }
 
       try {
         setIsLoading(true);
         const data = await searchAnime(searchQuery);
-        setAnimeList(data);
+        // ✅ FIXED: Simple array reverse for search results
+        const reversedData = [...data].reverse();
+        setAnimeList(reversedData);
       } catch (err) {
         setError('Search failed');
       } finally {
@@ -89,29 +98,33 @@ const HomePage: React.FC<Props> = ({
   // ✅ RENDER LOGIC
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-8">
-          {searchQuery ? 'Searching...' : 'Latest Anime'}
-        </h1>
-        <SkeletonLoader type="card" count={12} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold text-white mb-8">
+            {searchQuery ? 'Searching...' : 'Latest Anime'}
+          </h1>
+          <SkeletonLoader type="card" count={12} />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-16">
-          <div className="bg-red-900/20 rounded-xl p-8 max-w-md mx-auto">
-            <div className="text-6xl mb-4">😞</div>
-            <h2 className="text-2xl font-semibold text-white mb-2">Error Loading Anime</h2>
-            <p className="text-red-300 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition"
-            >
-              Try Again
-            </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <div className="bg-red-900/20 rounded-xl p-8 max-w-md mx-auto border border-red-500/30">
+              <div className="text-6xl mb-4">😞</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Error Loading Anime</h2>
+              <p className="text-red-300 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-2 rounded-lg transition-all duration-300 font-medium"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -119,40 +132,43 @@ const HomePage: React.FC<Props> = ({
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          {contentType === 'All' ? 'Latest Content' : `Latest ${contentType}`}
-        </h1>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+            {contentType === 'All' ? 'Latest Content' : `Latest ${contentType}`}
+          </h1>
+        </div>
 
-      {filteredAnime.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
-            <div className="text-6xl mb-4">🔍</div>
-            <h2 className="text-2xl font-semibold text-slate-300 mb-2">
-              {searchQuery ? 'No Results Found' : 'No Anime Available'}
-            </h2>
-            <p className="text-slate-400">
-              {searchQuery 
-                ? `No results for "${searchQuery}"`
-                : 'Check back later for new content'
-              }
-            </p>
+        {filteredAnime.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto border border-slate-700">
+              <div className="text-6xl mb-4">🔍</div>
+              <h2 className="text-2xl font-semibold text-slate-300 mb-2">
+                {searchQuery ? 'No Results Found' : 'No Anime Available'}
+              </h2>
+              <p className="text-slate-400">
+                {searchQuery 
+                  ? `No results for "${searchQuery}"`
+                  : 'Check back later for new content'
+                }
+              </p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-          {filteredAnime.map((anime, index) => (
-            <AnimeCard
-              key={anime.id}
-              anime={anime}
-              onClick={onAnimeSelect}
-              index={index}
-            />
-          ))}
-        </div>
-      )}
+        ) : (
+          // ✅ CHANGED: 3 columns on mobile (grid-cols-3), adjusted gaps
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
+            {filteredAnime.map((anime, index) => (
+              <AnimeCard
+                key={anime.id}
+                anime={anime}
+                onClick={onAnimeSelect}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
