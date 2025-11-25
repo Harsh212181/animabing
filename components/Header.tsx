@@ -1,4 +1,4 @@
-  // components/Header.tsx - UPDATED WITH CONSISTENT COLORS
+  // components/Header.tsx - UPDATED WITH ENGLISH SUB BUTTON
 import React, { useState } from 'react';
 import type { FilterType, ContentType } from '../src/types';
 import { SearchIcon } from './icons/SearchIcon';
@@ -10,7 +10,7 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   searchQuery: string;
   onNavigate: (destination: 'home' | 'list') => void;
-  onFilterAndNavigateHome: (filter: 'Hindi Dub' | 'Hindi Sub') => void;
+  onFilterAndNavigateHome: (filter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => void; // ✅ UPDATED
   onContentTypeNavigate: (contentType: ContentType) => void;
 }
 
@@ -22,7 +22,8 @@ const Header: React.FC<HeaderProps> = ({ onSearchChange, searchQuery, onNavigate
     setIsMenuOpen(false);
   };
 
-  const handleFilterClick = (filter: 'Hindi Dub' | 'Hindi Sub') => {
+  // ✅ UPDATED: Added English Sub parameter
+  const handleFilterClick = (filter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => {
     onFilterAndNavigateHome(filter);
     setIsMenuOpen(false);
   };
@@ -33,7 +34,6 @@ const Header: React.FC<HeaderProps> = ({ onSearchChange, searchQuery, onNavigate
   };
 
   return (
-    // ✅ UPDATED: Consistent background gradient
     <header className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 backdrop-blur-lg sticky top-0 z-40 relative border-b border-purple-500/20">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-20">
@@ -46,6 +46,8 @@ const Header: React.FC<HeaderProps> = ({ onSearchChange, searchQuery, onNavigate
             <button onClick={() => handleNavClick('home')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Home</button>
             <button onClick={() => handleFilterClick('Hindi Dub')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Hindi Dub</button>
             <button onClick={() => handleFilterClick('Hindi Sub')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Hindi Sub</button>
+            {/* ✅ ADDED: English Sub Button */}
+            <button onClick={() => handleFilterClick('English Sub')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">English Sub</button>
             <button onClick={() => handleContentTypeClick('Movie')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Movies</button>
             <button onClick={() => handleContentTypeClick('Manga')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Manga</button>
             <button onClick={() => handleNavClick('list')} className="text-slate-300 hover:text-purple-400 transition-colors font-medium">Content List</button>
@@ -79,13 +81,14 @@ const Header: React.FC<HeaderProps> = ({ onSearchChange, searchQuery, onNavigate
 
       {/* Mobile Menu - Dropdown */}
       {isMenuOpen && (
-        // ✅ UPDATED: Consistent background gradient
         <div className="md:hidden absolute top-full left-0 w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 backdrop-blur-md shadow-lg animate-fade-in-down border-b border-purple-500/20">
           <div className="container mx-auto px-4 pb-4">
             <nav className="flex flex-col pt-2 space-y-1">
                 <button onClick={() => handleNavClick('home')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Home</button>
                 <button onClick={() => handleFilterClick('Hindi Dub')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Hindi Dub</button>
                 <button onClick={() => handleFilterClick('Hindi Sub')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Hindi Sub</button>
+                {/* ✅ ADDED: English Sub Mobile Button */}
+                <button onClick={() => handleFilterClick('English Sub')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">English Sub</button>
                 <button onClick={() => handleContentTypeClick('Movie')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Movies</button>
                 <button onClick={() => handleContentTypeClick('Manga')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Manga</button>
                 <button onClick={() => handleNavClick('list')} className="text-left w-full px-3 py-3 rounded-md text-slate-200 hover:bg-purple-700 hover:text-white transition-colors font-medium">Content List</button>
