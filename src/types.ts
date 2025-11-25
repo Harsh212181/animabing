@@ -1,5 +1,4 @@
- // src/types.ts - MERGED VERSION
-
+  // src/types.ts - UPDATED WITH ENGLISH SUB
 export interface Episode {
   episodeId?: string;
   _id?: string;
@@ -7,7 +6,7 @@ export interface Episode {
   title: string;
   cutyLink: string;
   secureFileReference?: string;
-  session?: number; // ✅ NAYA FIELD ADD KARO
+  session?: number;
 }
 
 export interface Chapter {
@@ -20,12 +19,12 @@ export interface Chapter {
   session?: number;
 }
 
-export type SubDubStatus = 'Hindi Dub' | 'Hindi Sub' | 'Both' | 'Subbed' | 'Dubbed' | 'Sub & Dub' | 'Dual Audio';
+// ✅ UPDATED: Added 'English Sub' to SubDubStatus
+export type SubDubStatus = 'Hindi Dub' | 'Hindi Sub' | 'English Sub' | 'Both' | 'Subbed' | 'Dubbed' | 'Sub & Dub' | 'Dual Audio';
 export type FilterType = 'All' | SubDubStatus;
 
-// ✅ CORRECTION: Separate types for content and filtering
-export type ContentType = 'Anime' | 'Movie' | 'Manga'; // ✅ ADDED MANGA
-export type ContentTypeFilter = 'All' | ContentType; // Filter type
+export type ContentType = 'Anime' | 'Movie' | 'Manga';
+export type ContentTypeFilter = 'All' | ContentType;
 
 export interface Anime {
   id: string;
@@ -33,16 +32,16 @@ export interface Anime {
   title: string;
   thumbnail: string;
   releaseYear: number;
-  subDubStatus: SubDubStatus;
-  contentType: ContentType; // ✅ NOW INCLUDES MANGA
+  subDubStatus: SubDubStatus; // ✅ NOW INCLUDES ENGLISH SUB
+  contentType: ContentType;
   genreList: string[];
   description: string;
   status: string;
   episodes: Episode[];
-  chapters?: Chapter[]; // ✅ NEW FIELD FOR MANGA
+  chapters?: Chapter[];
   reportCount?: number;
   lastReported?: string;
-  totalSessions?: number; // ✅ NAYA FIELD ADD KARO
+  totalSessions?: number;
 }
 
 export interface SocialMedia {
