@@ -1,4 +1,4 @@
-// src/components/admin/AnimeListTable.tsx - COMPLETE WITH EDIT FUNCTIONALITY
+  // src/components/admin/AnimeListTable.tsx - UPDATED WITH SEARCH FUNCTIONALITY
 import React, { useState, useEffect } from 'react';
 import type { Anime } from '../../types';
 import axios from 'axios';
@@ -9,10 +9,12 @@ const token = localStorage.getItem('adminToken') || '';
 
 const AnimeListTable: React.FC = () => {
   const [animes, setAnimes] = useState<Anime[]>([]);
+  const [filteredAnimes, setFilteredAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Ongoing' | 'Complete'>('All');
-  const [contentTypeFilter, setContentTypeFilter] = useState<'All' | 'Anime' | 'Movie'>('All');
+  const [contentTypeFilter, setContentTypeFilter] = useState<'All' | 'Anime' | 'Movie' | 'Manga'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [editingAnime, setEditingAnime] = useState<Anime | null>(null);
   const [editForm, setEditForm] = useState({
     title: '',
@@ -22,12 +24,29 @@ const AnimeListTable: React.FC = () => {
     subDubStatus: 'Hindi Sub' as Anime['subDubStatus'],
     genreList: [''],
     status: 'Ongoing',
-    contentType: 'Anime' as 'Anime' | 'Movie'
+    contentType: 'Anime' as 'Anime' | 'Movie' | 'Manga'
   });
 
   useEffect(() => {
     fetchAnimes();
   }, [statusFilter, contentTypeFilter]);
+
+  useEffect(() => {
+    // Search functionality
+    if (searchQuery.trim() === '') {
+      setFilteredAnimes(animes);
+    } else {
+      const filtered = animes.filter(anime =>
+        anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        anime.genreList.some(genre => 
+          genre.toLowerCase().includes(searchQuery.toLowerCase())
+        ) ||
+        anime.subDubStatus.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        anime.contentType.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredAnimes(filtered);
+    }
+  }, [searchQuery, animes]);
 
   const fetchAnimes = async () => {
     setLoading(true);
@@ -41,7 +60,9 @@ const AnimeListTable: React.FC = () => {
       const { data } = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAnimes(data.map((a: any) => ({ ...a, id: a._id })));
+      const animeData = data.map((a: any) => ({ ...a, id: a._id }));
+      setAnimes(animeData);
+      setFilteredAnimes(animeData);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load anime');
     } finally {
@@ -100,94 +121,161 @@ const AnimeListTable: React.FC = () => {
     setEditForm({ ...editForm, genreList: genres.length ? genres : ['Action'] });
   };
 
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
   if (loading) return <div className="flex justify-center py-8"><Spinner size="lg" /></div>;
   if (error) return <p className="text-red-400 text-center p-4">{error}</p>;
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h3 className="text-xl font-semibold text-white">
-          Content List ({animes.length})
-          <span className="text-sm text-slate-400 ml-2">
-            {contentTypeFilter !== 'All' && `- ${contentTypeFilter}s`}
-            {statusFilter !== 'All' && ` - ${statusFilter}`}
-          </span>
-        </h3>
-        <div className="flex items-center gap-4">
-          {/* Content Type Filter */}
-          <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg">
-            <button
-              onClick={() => setContentTypeFilter('All')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                contentTypeFilter === 'All'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setContentTypeFilter('Anime')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                contentTypeFilter === 'Anime'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Anime
-            </button>
-            <button
-              onClick={() => setContentTypeFilter('Movie')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                contentTypeFilter === 'Movie'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Movies
-            </button>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg">
-            <button
-              onClick={() => setStatusFilter('All')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                statusFilter === 'All'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setStatusFilter('Ongoing')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                statusFilter === 'Ongoing'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Ongoing
-            </button>
-            <button
-              onClick={() => setStatusFilter('Complete')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                statusFilter === 'Complete'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Complete
-            </button>
+      <div className="flex flex-col gap-4 mb-6">
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search by title, genre, language, or type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg pl-10 pr-10 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            
+            {/* Results Count */}
+            <div className="text-sm text-slate-300 whitespace-nowrap">
+              {searchQuery ? (
+                <span>
+                  Showing {filteredAnimes.length} of {animes.length} results
+                </span>
+              ) : (
+                <span>Total: {animes.length} items</span>
+              )}
+            </div>
           </div>
           
-          <button 
-            onClick={fetchAnimes}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"
-          >
-            Refresh
-          </button>
+          {/* Search Tips */}
+          {searchQuery && filteredAnimes.length === 0 && (
+            <div className="mt-2 text-sm text-slate-400">
+              💡 Try searching by: title, genre (action, romance), language (hindi, english), or type (anime, movie)
+            </div>
+          )}
+        </div>
+
+        {/* Filters and Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h3 className="text-xl font-semibold text-white">
+            Content List
+            <span className="text-sm text-slate-400 ml-2">
+              {contentTypeFilter !== 'All' && `- ${contentTypeFilter}s`}
+              {statusFilter !== 'All' && ` - ${statusFilter}`}
+              {searchQuery && ` - "${searchQuery}"`}
+            </span>
+          </h3>
+          
+          <div className="flex items-center gap-4">
+            {/* Content Type Filter */}
+            <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg">
+              <button
+                onClick={() => setContentTypeFilter('All')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  contentTypeFilter === 'All'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setContentTypeFilter('Anime')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  contentTypeFilter === 'Anime'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Anime
+              </button>
+              <button
+                onClick={() => setContentTypeFilter('Movie')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  contentTypeFilter === 'Movie'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Movies
+              </button>
+              <button
+                onClick={() => setContentTypeFilter('Manga')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  contentTypeFilter === 'Manga'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Manga
+              </button>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg">
+              <button
+                onClick={() => setStatusFilter('All')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'All'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setStatusFilter('Ongoing')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'Ongoing'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Ongoing
+              </button>
+              <button
+                onClick={() => setStatusFilter('Complete')}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'Complete'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                Complete
+              </button>
+            </div>
+            
+            <button 
+              onClick={fetchAnimes}
+              className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -222,11 +310,12 @@ const AnimeListTable: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-300 mb-2">Content Type</label>
                   <select
                     value={editForm.contentType}
-                    onChange={(e) => setEditForm({ ...editForm, contentType: e.target.value as 'Anime' | 'Movie' })}
+                    onChange={(e) => setEditForm({ ...editForm, contentType: e.target.value as 'Anime' | 'Movie' | 'Manga' })}
                     className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                   >
                     <option value="Anime">Anime Series</option>
                     <option value="Movie">Movie</option>
+                    <option value="Manga">Manga</option>
                   </select>
                 </div>
 
@@ -251,6 +340,7 @@ const AnimeListTable: React.FC = () => {
                   >
                     <option value="Hindi Dub">Hindi Dub</option>
                     <option value="Hindi Sub">Hindi Sub</option>
+                    <option value="English Sub">English Sub</option>
                     <option value="Both">Both</option>
                     <option value="Subbed">Subbed</option>
                     <option value="Dubbed">Dubbed</option>
@@ -338,7 +428,7 @@ const AnimeListTable: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {animes.map(anime => (
+              {filteredAnimes.map(anime => (
                 <tr key={anime.id} className="hover:bg-slate-700/30 transition-colors">
                   <td className="p-4 font-medium text-white">
                     <div className="flex items-center gap-3">
@@ -359,6 +449,8 @@ const AnimeListTable: React.FC = () => {
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       anime.contentType === 'Movie' 
                         ? 'bg-blue-600 text-white' 
+                        : anime.contentType === 'Manga'
+                        ? 'bg-green-600 text-white'
                         : 'bg-purple-600 text-white'
                     }`}>
                       {anime.contentType}
@@ -374,32 +466,47 @@ const AnimeListTable: React.FC = () => {
                       {anime.status || 'Ongoing'}
                     </span>
                   </td>
-                  <td className="p-4 text-slate-300 text-sm">{anime.subDubStatus}</td>
+                  <td className="p-4">
+                    <span 
+                      className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                        anime.subDubStatus === 'Hindi Dub' 
+                          ? 'bg-red-600 text-white' 
+                          : anime.subDubStatus === 'Hindi Sub'
+                          ? 'bg-orange-600 text-white'
+                          : anime.subDubStatus === 'English Sub'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-purple-600 text-white'
+                      }`}
+                      style={{ minWidth: '80px', display: 'inline-block', textAlign: 'center' }}
+                    >
+                      {anime.subDubStatus}
+                    </span>
+                  </td>
                   <td className="p-4 text-slate-300">
-                    <span className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs">
+                    <span className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs whitespace-nowrap">
                       {anime.episodes?.length || 0} episodes
                     </span>
                   </td>
                   <td className="p-4 text-slate-300">
                     {anime.reportCount ? (
-                      <span className="bg-red-600/20 text-red-400 px-2 py-1 rounded text-xs">
+                      <span className="bg-red-600/20 text-red-400 px-2 py-1 rounded text-xs whitespace-nowrap">
                         {anime.reportCount} reports
                       </span>
                     ) : (
-                      <span className="text-slate-500 text-xs">No reports</span>
+                      <span className="text-slate-500 text-xs whitespace-nowrap">No reports</span>
                     )}
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(anime)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors"
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(anime.id)}
-                        className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm transition-colors"
+                        className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap"
                       >
                         Delete
                       </button>
@@ -411,16 +518,30 @@ const AnimeListTable: React.FC = () => {
           </table>
         </div>
         
-        {animes.length === 0 && (
+        {filteredAnimes.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">📺</div>
-            <h3 className="text-xl font-semibold text-slate-300 mb-2">No Content Found</h3>
+            <div className="text-4xl mb-4">
+              {searchQuery ? '🔍' : '📺'}
+            </div>
+            <h3 className="text-xl font-semibold text-slate-300 mb-2">
+              {searchQuery ? 'No Results Found' : 'No Content Found'}
+            </h3>
             <p className="text-slate-400">
-              {statusFilter !== 'All' || contentTypeFilter !== 'All'
+              {searchQuery 
+                ? `No results found for "${searchQuery}". Try different keywords.`
+                : statusFilter !== 'All' || contentTypeFilter !== 'All'
                 ? `No ${contentTypeFilter !== 'All' ? contentTypeFilter : ''} ${statusFilter !== 'All' ? statusFilter : ''} content found.` 
                 : 'Get started by adding your first anime or movie!'
               }
             </p>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="mt-4 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         )}
       </div>
