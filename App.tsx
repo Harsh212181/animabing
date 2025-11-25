@@ -1,4 +1,4 @@
- // App.tsx - FIXED VERSION WITH URL PARAMETERS
+  // App.tsx - UPDATED WITH ENGLISH SUB
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
@@ -20,7 +20,6 @@ import { getAllAnime } from './services/animeService';
 type ViewType = 'home' | 'list' | 'detail';
 type AdminViewType = 'login' | 'dashboard';
 
-// ✅ NEW: Create a wrapper component for detail page to handle anime loading
 const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { animeId } = useParams<{ animeId: string }>();
   const [anime, setAnime] = useState<Anime | null>(null);
@@ -124,11 +123,9 @@ const MainApp: React.FC = () => {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [showAdminButton, setShowAdminButton] = useState(false);
 
-  // ✅ YEH NAYA useEffect ADD KARO - URL parameters handle karne ke liye
   useEffect(() => {
     console.log('📍 URL Changed:', location.search);
     
-    // URL se parameters read karo
     const urlContentType = searchParams.get('contentType') as ContentTypeFilter | null;
     const urlFilter = searchParams.get('filter') as FilterType | null;
     const urlSearchQuery = searchParams.get('search') || '';
@@ -139,7 +136,6 @@ const MainApp: React.FC = () => {
       searchQuery: urlSearchQuery
     });
 
-    // State update karo based on URL parameters
     if (urlContentType && urlContentType !== contentType) {
       console.log('🔄 Updating contentType from URL:', urlContentType);
       setContentType(urlContentType);
@@ -157,44 +153,36 @@ const MainApp: React.FC = () => {
 
   }, [location.search, searchParams]);
 
-  // ✅ YEH BHI ADD KARO - Jab state change ho toh URL update karo
   useEffect(() => {
-    // Current URL parameters
     const currentParams = new URLSearchParams(location.search);
     
-    // ContentType update karo
     if (contentType !== 'All') {
       currentParams.set('contentType', contentType);
     } else {
       currentParams.delete('contentType');
     }
     
-    // Filter update karo  
     if (filter !== 'All') {
       currentParams.set('filter', filter);
     } else {
       currentParams.delete('filter');
     }
     
-    // Search query update karo
     if (searchQuery) {
       currentParams.set('search', searchQuery);
     } else {
       currentParams.delete('search');
     }
 
-    // New URL banayein
     const newSearch = currentParams.toString();
     const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
     
-    // Current URL se compare karo
     if (newUrl !== location.pathname + location.search) {
       console.log('🔗 Updating URL:', newUrl);
       navigate(newUrl, { replace: true });
     }
   }, [contentType, filter, searchQuery, navigate, location]);
 
-  // Check if admin is already logged in on app start
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -214,7 +202,6 @@ const MainApp: React.FC = () => {
     initializeApp();
   }, []);
 
-  // ✅ FIXED: Keyboard shortcut for admin access
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.altKey) {
@@ -244,9 +231,7 @@ const MainApp: React.FC = () => {
     setShowAdminButton(false);
   };
 
-  // ✅ FIXED: Use URL parameters for anime selection
   const handleAnimeSelect = (anime: Anime) => {
-    // Use the anime ID in the URL instead of storing in state
     navigate(`/detail/${anime.id}`);
     window.scrollTo(0, 0);
   };
@@ -264,7 +249,6 @@ const MainApp: React.FC = () => {
     setFilter(newFilter);
   }
 
-  // Update navigation functions to use react-router
   const handleNavigate = (destination: 'home' | 'list') => {
     if (destination === 'list') {
       navigate('/list');
@@ -278,7 +262,8 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleFilterAndNavigateHome = (newFilter: 'Hindi Dub' | 'Hindi Sub') => {
+  // ✅ UPDATED: Added 'English Sub' parameter type
+  const handleFilterAndNavigateHome = (newFilter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => {
     navigate(`/?filter=${encodeURIComponent(newFilter)}`);
     setFilter(newFilter);
     setContentType('All');
@@ -292,7 +277,6 @@ const MainApp: React.FC = () => {
     setSearchQuery('');
   };
 
-  // ✅ APP LOADING SCREEN
   if (isAppLoading) {
     return (
       <div className="min-h-screen bg-[#0a0c1c] flex flex-col items-center justify-center p-4">
@@ -309,6 +293,7 @@ const MainApp: React.FC = () => {
             <p className="text-slate-400 text-sm">
               • Fast Downloads<br/>
               • Hindi Dubbed & Subbed<br/>
+              • English Subbed<br/>
               • High Quality Content
             </p>
           </div>
@@ -317,7 +302,6 @@ const MainApp: React.FC = () => {
     );
   }
 
-  // Render admin views
   if (adminView === 'login') {
     return <AdminLogin onLogin={handleAdminLogin} />;
   }
@@ -352,7 +336,6 @@ const MainApp: React.FC = () => {
               setFilter={handleFilterChange}
             />
           } />
-          {/* ✅ FIXED: Use parameterized route for detail page */}
           <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={handleBack} />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dmca" element={<DMCA />} />
@@ -364,7 +347,6 @@ const MainApp: React.FC = () => {
       <Footer />
       <ScrollToTopButton />
       
-      {/* ✅ FIXED: Admin Access Button with Keyboard Shortcut */}
       {showAdminButton && (
         <div className="fixed bottom-4 left-4 z-50 animate-fade-in">
           <button
@@ -383,7 +365,6 @@ const MainApp: React.FC = () => {
   );
 };
 
-// Wrap your app with Router
 const App: React.FC = () => {
   return (
     <Router>
