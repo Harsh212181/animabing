@@ -1,4 +1,4 @@
- // components/AnimeCard.tsx - UPDATED VERSION WITH CORRECT PROPS
+  // components/AnimeCard.tsx - UPDATED VERSION
 import React from 'react';
 import type { Anime } from '../src/types';
 import { PlayIcon } from './icons/PlayIcon';
@@ -38,7 +38,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index }) => {
             {/* Year and Status in one line */}
             <div className="flex justify-between items-center">
               <p className="text-slate-300 text-xs sm:text-sm">{anime.releaseYear}</p>
-              <span className="bg-purple-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-md shadow-md">
+              <span className="bg-purple-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
                 {anime.subDubStatus}
               </span>
             </div>
