@@ -1,4 +1,4 @@
- // src/components/admin/AddAnimeForm.tsx - UPDATED VERSION
+  // src/components/admin/AddAnimeForm.tsx - UPDATED WITH ENGLISH SUB
 import React, { useState } from 'react';
 import axios from 'axios';
 import type { SubDubStatus } from '../../types';
@@ -32,7 +32,6 @@ const AddAnimeForm: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Anime added successfully! Check the list tab.');
-      // Reset form
       setForm({
         title: '',
         description: '',
@@ -123,6 +122,8 @@ const AddAnimeForm: React.FC = () => {
             >
               <option value="Hindi Dub">Hindi Dub</option>
               <option value="Hindi Sub">Hindi Sub</option>
+              {/* ✅ ADDED: English Sub Option */}
+              <option value="English Sub">English Sub</option>
               <option value="Both">Both</option>
             </select>
           </div>
