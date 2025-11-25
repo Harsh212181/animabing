@@ -1,4 +1,4 @@
-  // components/HomePage.tsx - UPDATED WITH CONSISTENT PLAY ICON
+  // components/HomePage.tsx - EXACTLY SAME PLAY ICON IN BOTH
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -331,7 +331,7 @@ const HomePage: React.FC<Props> = ({
           </h2>
         </div>
 
-        {/* ✅ UPDATED: SLIDING SECTION WITH CONSISTENT PLAY ICON */}
+        {/* ✅ SLIDING SECTION - EXACTLY SAME PLAY ICON AS ALL CONTENT */}
         {dailyAnime.length > 0 && (
           <div className="relative mb-8 lg:mb-12">
             <div className="w-full">
@@ -370,7 +370,7 @@ const HomePage: React.FC<Props> = ({
                       ${slideDirection === -1 ? 'animate-slide-in-left' : ''}
                     `}
                   >
-                    {/* ✅ UPDATED: ANIME CARD WITH CONSISTENT PLAY ICON */}
+                    {/* ✅ SLIDING CARD WITH EXACTLY SAME PLAY ICON */}
                     <div 
                       className="cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full h-full group"
                       onClick={() => onAnimeSelect(anime)}
@@ -422,15 +422,13 @@ const HomePage: React.FC<Props> = ({
                           </div>
                         </div>
 
-                        {/* ✅ UPDATED: CONSISTENT PLAY ICON - SAME AS ANIMECARD COMPONENT */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50">
-                          <div className="transform transition-transform duration-300 group-hover:scale-110">
-                            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full p-3 shadow-2xl border-2 border-white/20">
-                              <div className="bg-white rounded-full flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14">
-                                <span className="text-purple-600 font-bold text-lg lg:text-xl">
-                                  ▶
-                                </span>
-                              </div>
+                        {/* ✅ EXACTLY SAME PLAY ICON AS ALL CONTENT - NO GRADIENT, SIMPLE WHITE CIRCLE */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
+                          <div className="transform scale-75 group-hover:scale-90 transition-transform duration-300">
+                            <div className="bg-white rounded-full flex items-center justify-center shadow-lg w-10 h-10 lg:w-12 lg:h-12">
+                              <span className="text-purple-600 font-bold text-lg lg:text-xl">
+                                ▶
+                              </span>
                             </div>
                           </div>
                         </div>
