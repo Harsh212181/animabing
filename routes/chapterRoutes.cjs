@@ -1,4 +1,4 @@
- // routes/chapterRoutes.cjs - VALIDATION COMPLETELY REMOVED
+  // routes/chapterRoutes.cjs - VALIDATION COMPLETELY REMOVED
 const express = require('express');
 const router = express.Router();
 const Chapter = require('../models/Chapter.cjs');
@@ -80,10 +80,15 @@ router.post('/', async (req, res) => {
 
     console.log('💾 Saving chapter to database...');
     await newChapter.save();
+    
+    // ✅ YEH IMPORTANT LINE ADD KARO: Manga ko update karo for homepage sorting
+    await Anime.updateLastContent(mangaId);
+    
     console.log('✅ Chapter saved with ID:', newChapter._id);
+    console.log('🔄 Manga lastContentAdded updated for homepage priority');
 
     res.json({
-      message: 'Chapter added successfully!',
+      message: 'Chapter added successfully! This manga will now appear first on homepage.',
       chapter: newChapter,
       mangaTitle: manga.title
     });
@@ -147,8 +152,11 @@ router.patch('/', async (req, res) => {
     
     if (!updated) return res.status(404).json({ error: 'Chapter not found' });
     
+    // ✅ YEH BHI ADD KARO: Manga update karo jab chapter modify ho
+    await Anime.updateLastContent(mangaId);
+    
     res.json({ 
-      message: '✅ Chapter updated successfully!', 
+      message: '✅ Chapter updated successfully! This manga will now appear first on homepage.', 
       chapter: updated
     });
   } catch (error) {
@@ -178,6 +186,9 @@ router.delete('/', async (req, res) => {
       console.log('❌ Chapter not found for deletion');
       return res.status(404).json({ error: 'Chapter not found' });
     }
+    
+    // ✅ DELETE KE BAAD BHI MANGA UPDATE KARO
+    await Anime.updateLastContent(mangaId);
     
     console.log('✅ Chapter deleted successfully');
     res.json({ message: 'Chapter deleted' });
