@@ -1,4 +1,4 @@
-  // components/HomePage.tsx - FIXED SORTING VERSION
+  // components/HomePage.tsx - UPDATED CARD SIZE VERSION
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -32,8 +32,6 @@ const HomePage: React.FC<Props> = ({
         const data = await getAllAnime();
         
         // ✅ FIXED: Simple array reverse - newest items will be first
-        // Since your API returns items in the order they were added to database
-        // Reversing the array will show newest items first
         const reversedData = [...data].reverse();
         setAnimeList(reversedData);
       } catch (err) {
@@ -51,7 +49,6 @@ const HomePage: React.FC<Props> = ({
     const performSearch = async () => {
       if (searchQuery.trim() === '') {
         const data = await getAllAnime();
-        // ✅ FIXED: Simple array reverse for search results too
         const reversedData = [...data].reverse();
         setAnimeList(reversedData);
         return;
@@ -60,7 +57,6 @@ const HomePage: React.FC<Props> = ({
       try {
         setIsLoading(true);
         const data = await searchAnime(searchQuery);
-        // ✅ FIXED: Simple array reverse for search results
         const reversedData = [...data].reverse();
         setAnimeList(reversedData);
       } catch (err) {
@@ -156,8 +152,9 @@ const HomePage: React.FC<Props> = ({
             </div>
           </div>
         ) : (
-          // ✅ CHANGED: 3 columns on mobile (grid-cols-3), adjusted gaps
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
+          // ✅ UPDATED: Larger cards while maintaining 3 per row on mobile
+          // Reduced gaps to accommodate larger cards
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-3 lg:gap-4">
             {filteredAnime.map((anime, index) => (
               <AnimeCard
                 key={anime.id}
