@@ -61,21 +61,21 @@ const Footer: React.FC = () => {
     setSocialLinks([
       {
         platform: 'facebook',
-        url: 'https://facebook.com/animabing',
+        url: 'https://facebook.com/animebing',
         isActive: true,
         icon: 'facebook',
         displayName: 'Facebook'
       },
       {
         platform: 'instagram',
-        url: 'https://instagram.com/animabing',
+        url: 'https://instagram.com/animebing',
         isActive: true,
         icon: 'instagram',
         displayName: 'Instagram'
       },
       {
         platform: 'telegram',
-        url: 'https://t.me/animabing',
+        url: 'https://t.me/animebing',
         isActive: true,
         icon: 'telegram',
         displayName: 'Telegram'
@@ -195,7 +195,7 @@ const Footer: React.FC = () => {
           {/* Brand Section */}
           <div className="text-center lg:text-left">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
-              Anim<span className="text-purple-400">abing</span>
+              Anime<span className="text-purple-400">bing</span>
             </h3>
             <p className="text-slate-400 text-sm mb-4">
               Your ultimate destination for anime and movies. Watch, download, and enjoy your favorite content in high quality.
@@ -322,7 +322,7 @@ const Footer: React.FC = () => {
             {/* Copyright */}
             <div className="text-center md:text-right">
               <p className="text-slate-400 text-sm font-medium">
-                &copy; {new Date().getFullYear()} Animabing. All Rights Reserved.
+                &copy; {new Date().getFullYear()} Animebing. All Rights Reserved.
               </p>
               <p className="text-slate-500 text-xs mt-1">
                 Stream your favorite anime anytime, anywhere
