@@ -1,12 +1,23 @@
- // server.cjs - COMPLETE FIXED VERSION
+  // server.cjs - COMPLETE FIXED VERSION
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db.cjs');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const Analytics = require('./models/Analytics.cjs');
 const { generalLimiter, authLimiter, adminLimiter, apiLimiter } = require('./middleware/rateLimit.cjs');
+
+// ✅ IMPORT MIDDLEWARE AND ROUTES - MOVE TO TOP
+const adminAuth = require('./middleware/adminAuth.cjs');
+const animeRoutes = require('./routes/animeRoutes.cjs');
+const episodeRoutes = require('./routes/episodeRoutes.cjs');
+const chapterRoutes = require('./routes/chapterRoutes.cjs');
+const reportRoutes = require('./routes/reportRoutes.cjs');
+const socialRoutes = require('./routes/socialRoutes.cjs');
+const appDownloadRoutes = require('./routes/appDownloadRoutes.cjs');
+const adRoutes = require('./routes/adRoutes.cjs');
+const adminRoutes = require('./routes/adminRoutes.cjs');
+const contactRoutes = require('./routes/contactRoutes.cjs'); // ✅ ADDED
 
 const app = express();
 
@@ -203,17 +214,6 @@ app.get('/api/admin/create-default-admin', async (req, res) => {
   }
 });
 
-// ✅ IMPORT MIDDLEWARE AND ROUTES
-const adminAuth = require('./middleware/adminAuth.cjs');
-const animeRoutes = require('./routes/animeRoutes.cjs');
-const episodeRoutes = require('./routes/episodeRoutes.cjs');
-const chapterRoutes = require('./routes/chapterRoutes.cjs');
-const reportRoutes = require('./routes/reportRoutes.cjs');
-const socialRoutes = require('./routes/socialRoutes.cjs');
-const appDownloadRoutes = require('./routes/appDownloadRoutes.cjs');
-const adRoutes = require('./routes/adRoutes.cjs');
-const adminRoutes = require('./routes/adminRoutes.cjs');
-
 // ✅ FIXED ADMIN LOGIN ROUTE
 app.post('/api/admin/login', async (req, res) => {
   try {
@@ -396,62 +396,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/app-downloads', appDownloadRoutes);
 app.use('/api/ads', adRoutes);
-
-// ✅ CONTACT FORM ROUTE
-app.post('/api/contact', async (req, res) => {
-  try {
-    const { name, email, subject, message } = req.body;
-
-    console.log('📧 CONTACT FORM SUBMISSION:', { name, email, subject, message });
-
-    if (!name || !email || !subject || !message) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'All fields are required' 
-      });
-    }
-
-    const transporter = nodemailer.createTransporter({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'animebingofficial@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
-      }
-    });
-
-    const mailOptions = {
-      from: email,
-      to: 'animebingofficial@gmail.com',
-      subject: `Animabing Contact: ${subject}`,
-      html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, '<br>')}</p>
-        <hr>
-        <p><em>Sent from Animabing Contact Form</em></p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    console.log('✅ Contact form email sent successfully');
-    
-    res.json({
-      success: true,
-      message: 'Thank you for your message! We will get back to you soon.'
-    });
-
-  } catch (error) {
-    console.error('❌ Contact form error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to send message. Please try again later.'
-    });
-  }
-});
+app.use('/api', contactRoutes); // ✅ CONTACT ROUTES ADDED
 
 // ✅ DEBUG ROUTES (KEEP FOR TROUBLESHOOTING)
 app.get('/api/debug/episodes', async (req, res) => {
