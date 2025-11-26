@@ -1,4 +1,4 @@
- import React, { useState, useEffect, useMemo } from 'react';
+  import React, { useState, useEffect, useMemo } from 'react';
 import type { Anime, FilterType } from '../src/types';
 import { getAllAnime } from '../services/animeService';
 import Spinner from './Spinner';
@@ -15,6 +15,7 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect, filter, se
   const [isLoading, setIsLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchAnime = async () => {
@@ -35,11 +36,22 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect, filter, se
 
   const sortedAndFilteredAnime = useMemo(() => {
     let result = allAnime;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(anime => 
+        anime.title.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply type filter
     if (filter !== 'All') {
       result = result.filter(anime => anime.subDubStatus === filter);
     }
+    
     return result.sort((a, b) => a.title.localeCompare(b.title));
-  }, [allAnime, filter]);
+  }, [allAnime, filter, searchQuery]);
 
   // Effect to manage the filtering loading indicator for a smoother UX
   useEffect(() => {
@@ -56,30 +68,81 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect, filter, se
     }
   };
 
-  const filterOptions: FilterType[] = ['All', 'Hindi Dub', 'Hindi Sub'];
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setIsFiltering(true);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setIsFiltering(true);
+  };
+
+  const filterOptions: FilterType[] = ['All', 'Hindi Dub', 'Hindi Sub', 'English Sub'];
 
   return (
     <div className="container mx-auto px-4 py-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-slate-100 border-l-4 border-purple-500 pl-4">
-          Anime List (A-Z)
+          Anime List
         </h1>
-        <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg">
-          {filterOptions.map(option => (
-            <button
-              key={option}
-              onClick={() => handleFilterChange(option)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                filter === option
-                  ? 'bg-purple-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {option}
-            </button>
-          ))}
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search anime..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-1 bg-slate-800/50 p-1 rounded-lg max-w-full">
+            {filterOptions.map(option => (
+              <button
+                key={option}
+                onClick={() => handleFilterChange(option)}
+                className={`px-2 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap flex-shrink-0 ${
+                  filter === option
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Search results info */}
+      {searchQuery && (
+        <div className="mb-4 text-slate-300">
+          <p>
+            {sortedAndFilteredAnime.length > 0 
+              ? `Found ${sortedAndFilteredAnime.length} anime matching "${searchQuery}"`
+              : `No anime found matching "${searchQuery}"`
+            }
+          </p>
+          <button 
+            onClick={clearSearch}
+            className="text-purple-400 hover:text-purple-300 text-sm mt-1"
+          >
+            Clear search
+          </button>
+        </div>
+      )}
 
       {/* Ad before anime list */}
       <div className="mb-6 hidden lg:block">
@@ -108,14 +171,22 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect, filter, se
                     onClick={() => onAnimeSelect(anime)}
                     className="w-full text-left p-4 flex justify-between items-center hover:bg-slate-700/50 transition-colors duration-200 group"
                   >
-                    <span className="text-slate-200 group-hover:text-purple-300 transition-colors">{anime.title}</span>
-                    <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded-full">{anime.subDubStatus}</span>
+                    {/* Full title on desktop, truncated on mobile */}
+                    <span className="text-slate-200 group-hover:text-purple-300 transition-colors pr-2 truncate md:overflow-visible md:whitespace-normal">
+                      {anime.title}
+                    </span>
+                    <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded-full flex-shrink-0">
+                      {anime.subDubStatus}
+                    </span>
                   </button>
                 </li>
               ))
             ) : (
               <li className="p-8 text-center text-slate-400">
-                No anime found for the selected filter.
+                {searchQuery 
+                  ? `No anime found matching "${searchQuery}"`
+                  : 'No anime found for the selected filter.'
+                }
               </li>
             )}
           </ul>
