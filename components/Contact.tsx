@@ -1,11 +1,10 @@
- // components/Contact.tsx - UPDATED FOR ONLINE SERVER
+  // components/Contact.tsx - FINAL WORKING VERSION
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Spinner from './Spinner';
 
-// ✅ UPDATED: Use online server URL
-const API_BASE = 'https://animabing.onrender.com/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -24,17 +23,9 @@ const Contact: React.FC = () => {
     setSubmitMessage('');
 
     try {
-      console.log('📨 Sending contact form data to:', `${API_BASE}/contact`);
-      console.log('Form data:', formData);
+      console.log('📨 Sending contact form data:', formData);
       
-      const response = await axios.post(`${API_BASE}/contact`, formData, {
-        timeout: 10000, // 10 second timeout
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('✅ Contact form response:', response.data);
+      const response = await axios.post(`${API_BASE}/contact`, formData);
       
       if (response.data.success) {
         setSubmitMessage(response.data.message);
@@ -48,20 +39,8 @@ const Contact: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Contact form submission error:', error);
       
-      let errorMessage = 'Network error: Please check your connection and try again.';
-      
-      if (error.response) {
-        // Server responded with error status
-        errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
-        console.error('Server error details:', error.response.data);
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = 'No response from server. Please try again later.';
-        console.error('No response received:', error.request);
-      } else if (error.code === 'ECONNABORTED') {
-        // Request timeout
-        errorMessage = 'Request timeout. Please try again.';
-      }
+      const errorMessage = error.response?.data?.error || 
+        'Network error: Please check your connection and try again.';
       
       setSubmitMessage(errorMessage);
       setMessageType('error');
