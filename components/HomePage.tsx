@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
 import { SkeletonLoader } from './SkeletonLoader';
-import Spinner from './Spinner';
 import { getAllAnime, searchAnime } from '../services/animeService';
 
 interface Props {
@@ -24,7 +23,6 @@ const HomePage: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [dailyAnime, setDailyAnime] = useState<Anime[]>([]);
-  const [slideDirection, setSlideDirection] = useState(0);
 
   // ✅ DAILY ANIME SELECTION
   const getDailyAnime = useCallback((allAnime: Anime[]): Anime[] => {
@@ -50,7 +48,7 @@ const HomePage: React.FC<Props> = ({
 
   // ✅ AUTO SLIDE CONFIGURATION - MOBILE: 2 CARDS, DESKTOP: 6 CARDS
   const SLIDE_INTERVAL = 5000;
-  const MOBILE_CARDS_PER_SLIDE = 2; // ✅ CHANGED FROM 3 TO 2
+  const MOBILE_CARDS_PER_SLIDE = 2;
   const DESKTOP_CARDS_PER_SLIDE = 6;
 
   useEffect(() => {
@@ -113,7 +111,6 @@ const HomePage: React.FC<Props> = ({
     if (dailyAnime.length <= cardsPerSlide) return;
 
     const interval = setInterval(() => {
-      setSlideDirection(1);
       setCurrentSlide(prev => {
         const totalSlides = Math.ceil(dailyAnime.length / cardsPerSlide);
         return (prev + 1) % totalSlides;
@@ -226,14 +223,12 @@ const HomePage: React.FC<Props> = ({
   // ✅ MANUAL SLIDE CONTROLS
   const nextSlide = useCallback(() => {
     if (dailyAnime.length <= cardsPerSlide) return;
-    setSlideDirection(1);
     const totalSlides = Math.ceil(dailyAnime.length / cardsPerSlide);
     setCurrentSlide(prev => (prev + 1) % totalSlides);
   }, [dailyAnime.length, cardsPerSlide]);
 
   const prevSlide = useCallback(() => {
     if (dailyAnime.length <= cardsPerSlide) return;
-    setSlideDirection(-1);
     const totalSlides = Math.ceil(dailyAnime.length / cardsPerSlide);
     setCurrentSlide(prev => (prev - 1 + totalSlides) % totalSlides);
   }, [dailyAnime.length, cardsPerSlide]);
@@ -288,7 +283,7 @@ const HomePage: React.FC<Props> = ({
               <p className="text-red-300 mb-4">{error}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-2 rounded-lg transition-all duration-300 font-medium"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-2 rounded-lg transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 Try Again
               </button>
@@ -313,7 +308,7 @@ const HomePage: React.FC<Props> = ({
                 className={`
                   px-2 py-1 rounded-md text-[10px] font-medium transition-all duration-200 
                   border shadow-sm hover:shadow whitespace-nowrap flex-shrink-0
-                  transform hover:scale-102 active:scale-98 min-w-[60px]
+                  transform hover:scale-102 active:scale-98 min-w-[60px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900
                   ${filter === filterBtn.key
                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-blue-500/20'
                     : 'bg-slate-800/80 text-slate-300 border-slate-600 hover:border-slate-500 hover:bg-slate-700/80'
@@ -342,14 +337,14 @@ const HomePage: React.FC<Props> = ({
                 <>
                   <button
                     onClick={prevSlide}
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 lg:p-3 rounded-full transition-all duration-200 -ml-2 lg:-ml-6 shadow-2xl hover:scale-110 active:scale-95"
+                    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 lg:p-3 rounded-full transition-all duration-200 -ml-2 lg:-ml-6 shadow-2xl hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900"
                     aria-label="Previous slide"
                   >
                     ‹
                   </button>
                   <button
                     onClick={nextSlide}
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 lg:p-3 rounded-full transition-all duration-200 -mr-2 lg:-mr-6 shadow-2xl hover:scale-110 active:scale-95"
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 lg:p-3 rounded-full transition-all duration-200 -mr-2 lg:-mr-6 shadow-2xl hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900"
                     aria-label="Next slide"
                   >
                     ›
@@ -361,21 +356,24 @@ const HomePage: React.FC<Props> = ({
               <div className={`grid gap-2 lg:gap-4 px-1 ${
                 cardsPerSlide === 6 
                   ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' 
-                  : 'grid-cols-2' // ✅ CHANGED FROM grid-cols-3 TO grid-cols-2
+                  : 'grid-cols-2'
               }`}>
                 {currentAnimeSlide.map((anime, index) => (
                   <div 
                     key={`${anime.id}-${currentSlide}-${index}`}
-                    className={`
-                      transform transition-all duration-500 ease-out
-                      ${slideDirection === 1 ? 'animate-slide-in-right' : ''}
-                      ${slideDirection === -1 ? 'animate-slide-in-left' : ''}
-                    `}
+                    className="transform transition-all duration-500 ease-in-out"
                   >
-                    {/* ✅ SLIDING CARD WITH EXACTLY SAME PLAY ICON */}
+                    {/* ✅ SLIDING CARD */}
                     <div 
-                      className="cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full h-full group"
+                      className="cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full h-full group focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                       onClick={() => onAnimeSelect(anime)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onAnimeSelect(anime);
+                        }
+                      }}
+                      tabIndex={0}
                     >
                       <div className={`relative h-full ${
                         cardsPerSlide === 6 ? 'aspect-[2/3]' : 'aspect-[3/4]'
@@ -424,7 +422,7 @@ const HomePage: React.FC<Props> = ({
                           </div>
                         </div>
 
-                        {/* ✅ EXACTLY SAME PLAY ICON AS ALL CONTENT */}
+                        {/* ✅ PLAY ICON */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
                           <div className="transform scale-75 group-hover:scale-90 transition-transform duration-300">
                             <div className="bg-white rounded-full flex items-center justify-center shadow-lg w-10 h-10 lg:w-12 lg:h-12">
@@ -446,11 +444,8 @@ const HomePage: React.FC<Props> = ({
                   {Array.from({ length: totalSlides }).map((_, index) => (
                     <button
                       key={index}
-                      onClick={() => {
-                        setSlideDirection(index > currentSlide ? 1 : -1);
-                        setCurrentSlide(index);
-                      }}
-                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900 ${
                         currentSlide === index 
                           ? 'bg-white w-4' 
                           : 'bg-gray-500 hover:bg-gray-300'
@@ -482,7 +477,7 @@ const HomePage: React.FC<Props> = ({
                 <div className="mt-3 lg:mt-4">
                   <button
                     onClick={() => handleFilterChange('All')}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg transition-all duration-300 font-medium text-sm lg:text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg transition-all duration-300 font-medium text-sm lg:text-base shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                   >
                     Show All Content
                   </button>
@@ -497,7 +492,6 @@ const HomePage: React.FC<Props> = ({
               <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-3 lg:mb-4">
                 All Content
               </h2>
-              {/* ✅ CHANGED FROM grid-cols-3 TO grid-cols-2 FOR MOBILE */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
                 {filteredAnime.map((anime, index) => (
                   <AnimeCard
