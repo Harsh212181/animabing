@@ -1,4 +1,4 @@
-  // components/HomePage.tsx - FINAL OPTIMIZED VERSION
+  // components/HomePage.tsx - UPDATED VERSION
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -31,6 +31,42 @@ const HomePage: React.FC<Props> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // ✅ DYNAMIC HEADING TEXT BASED ON FILTER
+  const getSectionHeading = useCallback(() => {
+    if (contentType !== 'All') {
+      return `Latest ${contentType}`;
+    }
+    
+    switch (filter) {
+      case 'Hindi Dub':
+        return 'Latest Hindi Dub';
+      case 'Hindi Sub':
+        return 'Latest Hindi Sub';
+      case 'English Sub':
+        return 'Latest English Sub';
+      default:
+        return 'Latest Content';
+    }
+  }, [filter, contentType]);
+
+  // ✅ DYNAMIC ALL CONTENT TEXT BASED ON FILTER
+  const getAllContentHeading = useCallback(() => {
+    if (contentType !== 'All') {
+      return `All ${contentType}`;
+    }
+    
+    switch (filter) {
+      case 'Hindi Dub':
+        return 'All Hindi Dub';
+      case 'Hindi Sub':
+        return 'All Hindi Sub';
+      case 'English Sub':
+        return 'All English Sub';
+      default:
+        return 'All Content';
+    }
+  }, [filter, contentType]);
 
   // ✅ DAILY ANIME SELECTION
   const getDailyAnime = useCallback((allAnime: Anime[]): Anime[] => {
@@ -297,7 +333,7 @@ const HomePage: React.FC<Props> = ({
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-white mb-8">
-            {searchQuery ? 'Searching...' : 'Latest Content'}
+            {searchQuery ? 'Searching...' : getSectionHeading()}
           </h1>
           <div className="space-y-8">
             <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 lg:gap-4">
@@ -367,10 +403,10 @@ const HomePage: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* MAIN HEADING */}
+        {/* MAIN HEADING - NOW DYNAMIC */}
         <div className="mb-4 lg:mb-6">
           <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-            {contentType === 'All' ? 'Latest Content' : `Latest ${contentType}`}
+            {getSectionHeading()}
           </h2>
         </div>
 
@@ -494,7 +530,7 @@ const HomePage: React.FC<Props> = ({
           </div>
         )}
 
-        {/* ALL CONTENT SECTION */}
+        {/* ALL CONTENT SECTION - NOW WITH DYNAMIC HEADING */}
         {filteredAnime.length === 0 ? (
           <div className="text-center py-8 lg:py-16">
             <div className="bg-slate-800/50 rounded-xl p-6 lg:p-8 max-w-md mx-auto border border-slate-700">
@@ -523,8 +559,9 @@ const HomePage: React.FC<Props> = ({
         ) : (
           <>
             <div className="mt-6 lg:mt-8">
+              {/* DYNAMIC ALL CONTENT HEADING */}
               <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-3 lg:mb-4">
-                All Content
+                {getAllContentHeading()}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
                 {filteredAnime.map((anime, index) => (
