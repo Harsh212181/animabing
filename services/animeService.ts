@@ -7,9 +7,9 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://animabing.onrender.co
 const cache = new Map();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
-// ✅ OPTIMIZED: Paginated API calls
-export const getAnimePaginated = async (page: number = 1, limit: number = 24): Promise<Anime[]> => {
-  const cacheKey = `anime-page-${page}-${limit}`;
+// ✅ UPDATED: Paginated API calls with fields parameter
+export const getAnimePaginated = async (page: number = 1, limit: number = 24, fields?: string): Promise<Anime[]> => {
+  const cacheKey = `anime-page-${page}-${limit}-${fields || 'default'}`;
   
   // Check cache first
   const cached = cache.get(cacheKey);
@@ -20,7 +20,14 @@ export const getAnimePaginated = async (page: number = 1, limit: number = 24): P
 
   try {
     console.log(`📡 Fetching page ${page} from API...`);
-    const response = await fetch(`${API_BASE}/anime?page=${page}&limit=${limit}`);
+    
+    // Build URL with optional fields parameter
+    let url = `${API_BASE}/anime?page=${page}&limit=${limit}`;
+    if (fields) {
+      url += `&fields=${encodeURIComponent(fields)}`;
+    }
+    
+    const response = await fetch(url);
     
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
@@ -49,13 +56,9 @@ export const getAnimePaginated = async (page: number = 1, limit: number = 24): P
   }
 };
 
-// ✅ KEEP existing functions but optimized
-export const getAllAnime = async (): Promise<Anime[]> => {
-  return getAnimePaginated(1, 50); // First page with more items
-};
-
-export const searchAnime = async (query: string): Promise<Anime[]> => {
-  const cacheKey = `search-${query}`;
+// ✅ UPDATED: Search function with fields parameter
+export const searchAnime = async (query: string, fields?: string): Promise<Anime[]> => {
+  const cacheKey = `search-${query}-${fields || 'default'}`;
   
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -63,9 +66,15 @@ export const searchAnime = async (query: string): Promise<Anime[]> => {
   }
 
   try {
-    if (!query.trim()) return await getAllAnime();
+    if (!query.trim()) return await getAllAnime(fields);
     
-    const response = await fetch(`${API_BASE}/anime/search?query=${encodeURIComponent(query)}`);
+    // Build URL with optional fields parameter
+    let url = `${API_BASE}/anime/search?query=${encodeURIComponent(query)}`;
+    if (fields) {
+      url += `&fields=${encodeURIComponent(fields)}`;
+    }
+    
+    const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const result = await response.json();
@@ -91,10 +100,23 @@ export const searchAnime = async (query: string): Promise<Anime[]> => {
   }
 };
 
-// ✅ Keep other functions same (they're already optimized)
-export const getAnimeById = async (id: string): Promise<Anime | null> => {
+// ✅ UPDATED: Get anime by ID with fields parameter
+export const getAnimeById = async (id: string, fields?: string): Promise<Anime | null> => {
+  const cacheKey = `anime-${id}-${fields || 'default'}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
   try {
-    const response = await fetch(`${API_BASE}/anime/${id}`);
+    // Build URL with optional fields parameter
+    let url = `${API_BASE}/anime/${id}`;
+    if (fields) {
+      url += `?fields=${encodeURIComponent(fields)}`;
+    }
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -103,10 +125,18 @@ export const getAnimeById = async (id: string): Promise<Anime | null> => {
     const result = await response.json();
     
     if (result.success && result.data) {
-      return {
+      const animeData = {
         ...result.data,
         id: result.data._id || result.data.id
       };
+      
+      // Store in cache
+      cache.set(cacheKey, {
+        data: animeData,
+        timestamp: Date.now()
+      });
+      
+      return animeData;
     }
     return null;
   } catch (error) {
@@ -115,6 +145,12 @@ export const getAnimeById = async (id: string): Promise<Anime | null> => {
   }
 };
 
+// ✅ UPDATED: Get all anime with fields parameter
+export const getAllAnime = async (fields?: string): Promise<Anime[]> => {
+  return getAnimePaginated(1, 50, fields); // First page with more items
+};
+
+// Keep other functions same (they're already optimized)
 export const getEpisodesByAnimeId = async (animeId: string): Promise<any[]> => {
   try {
     const response = await fetch(`${API_BASE}/episodes/${animeId}`);
