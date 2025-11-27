@@ -1,4 +1,4 @@
-  // App.tsx - UPDATED WITH ANIME LIST ROUTE
+  // App.tsx - UPDATED WITH PROPER ROUTES
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
@@ -251,7 +251,7 @@ const MainApp: React.FC = () => {
 
   const handleNavigate = (destination: 'home' | 'list') => {
     if (destination === 'list') {
-      navigate('/anime'); // ✅ CHANGED: Now navigates to /anime instead of /list
+      navigate('/anime');
     } else {
       navigate('/');
     }
@@ -330,12 +330,10 @@ const MainApp: React.FC = () => {
             />
           } />
           
-          {/* ✅ ADDED: Anime List Route */}
+          {/* ✅ Anime List Route */}
           <Route path="/anime" element={
             <AnimeListPage 
               onAnimeSelect={handleAnimeSelect}
-              filter={filter}
-              setFilter={handleFilterChange}
             />
           } />
           
