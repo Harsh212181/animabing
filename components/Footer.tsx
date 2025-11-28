@@ -126,11 +126,6 @@ const Footer: React.FC = () => {
         navigate('/anime');
         setTimeout(() => setIsNavigating(false), 800);
         return;
-      case 'search':
-        // Different page - use React Router
-        navigate('/search');
-        setTimeout(() => setIsNavigating(false), 800);
-        return;
       default:
         newUrl = window.location.origin + '/';
     }
@@ -303,13 +298,6 @@ const Footer: React.FC = () => {
                   disabled={isNavigating}
                 >
                   Anime List
-                </button>
-                <button
-                  onClick={() => handleQuickLinkClick('search')}
-                  className="text-slate-400 hover:text-purple-400 transition-colors py-1 text-left font-medium disabled:opacity-50"
-                  disabled={isNavigating}
-                >
-                  Search
                 </button>
               </div>
             </div>
