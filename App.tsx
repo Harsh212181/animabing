@@ -1,4 +1,4 @@
-  // App.tsx - UPDATED WITH PROPER ROUTES
+   // App.tsx - UPDATED WITH PROPER ROUTES
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
