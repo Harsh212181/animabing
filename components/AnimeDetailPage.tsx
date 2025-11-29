@@ -1,4 +1,4 @@
-  // components/AnimeDetailPage.tsx - UPDATED SESSION EPISODE COUNT
+   // components/AnimeDetailPage.tsx - UPDATED SESSION EPISODE COUNT
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
