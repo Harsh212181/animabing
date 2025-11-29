@@ -1,4 +1,4 @@
-  // src/components/admin/AdminDashboard.tsx - UPDATED WITH ONLINE API
+   // src/components/admin/AdminDashboard.tsx - UPDATED WITH ONLINE API
 import React, { useState, useEffect } from 'react';
 import AnimeListTable from './AnimeListTable';
 import AddAnimeForm from './AddAnimeForm';
