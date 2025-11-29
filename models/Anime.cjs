@@ -1,4 +1,4 @@
- // models/Anime.cjs - UPDATED WITH FEATURED ANIME FIELDS
+  // models/Anime.cjs - UPDATED WITH FEATURED ANIME FIELDS
 const mongoose = require('mongoose');
 
 const animeSchema = new mongoose.Schema({
