@@ -1,4 +1,4 @@
-  // models/Anime.cjs - UPDATED WITH FEATURED ANIME FIELDS
+ // models/Anime.cjs - CORRECTED WITH CONSISTENT FEATURED FIELD
 const mongoose = require('mongoose');
 
 const animeSchema = new mongoose.Schema({
@@ -7,6 +7,7 @@ const animeSchema = new mongoose.Schema({
   genreList: [String],
   releaseYear: Number,
   thumbnail: String,
+  bannerImage: String, // ✅ ADDED: For featured/carousel display
   contentType: {
     type: String,
     enum: ['Anime', 'Movie', 'Manga'],
@@ -32,12 +33,28 @@ const animeSchema = new mongoose.Schema({
     default: Date.now 
   },
 
-  // ✅ YEH DO NAYE FIELDS ADD KARO FEATURED ANIME KE LIYE
-  isFeatured: {
+  // ✅ CORRECTED: USE 'featured' INSTEAD OF 'isFeatured' FOR CONSISTENCY
+  featured: {
     type: Boolean,
     default: false
   },
   featuredOrder: {
+    type: Number,
+    default: 0
+  },
+  
+  // ✅ ADDITIONAL FIELDS FOR BETTER FUNCTIONALITY
+  rating: {
+    type: Number,
+    min: 0,
+    max: 10,
+    default: 0
+  },
+  totalEpisodes: {
+    type: Number,
+    default: 0
+  },
+  views: {
     type: Number,
     default: 0
   }
@@ -76,5 +93,11 @@ animeSchema.statics.updateLastContent = async function(animeId) {
     updatedAt: new Date()
   });
 };
+
+// ✅ YEH INDEXES ADD KARO FOR FASTER QUERIES
+animeSchema.index({ featured: 1, featuredOrder: -1 }); // For featured anime queries
+animeSchema.index({ title: 'text' }); // For text search
+animeSchema.index({ lastContentAdded: -1 }); // For recent updates
+animeSchema.index({ createdAt: -1 }); // For new arrivals
 
 module.exports = mongoose.models.Anime || mongoose.model('Anime', animeSchema);
