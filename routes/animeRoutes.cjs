@@ -1,4 +1,4 @@
- // routes/animeRoutes.cjs - OPTIMIZED VERSION WITH FEATURED ROUTE
+ // routes/animeRoutes.cjs - COMPLETE VERSION WITH ALL FEATURED ROUTES
 const express = require('express');
 const router = express.Router();
 const Anime = require('../models/Anime.cjs');
@@ -137,6 +137,100 @@ router.get('/:id', async (req, res) => {
         error: 'Invalid anime ID format' 
       });
     }
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ✅ ADDED: FEATURED MANAGEMENT ROUTES
+
+// Add anime to featured
+router.post('/:id/featured', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Count current featured animes for ordering
+    const featuredCount = await Anime.countDocuments({ featured: true });
+    
+    const updatedAnime = await Anime.findByIdAndUpdate(
+      id,
+      { 
+        featured: true,
+        featuredOrder: featuredCount + 1
+      },
+      { new: true }
+    );
+    
+    if (!updatedAnime) {
+      return res.status(404).json({ success: false, error: 'Anime not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Anime added to featured',
+      data: updatedAnime 
+    });
+  } catch (err) {
+    console.error('Error adding to featured:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Remove anime from featured
+router.delete('/:id/featured', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const updatedAnime = await Anime.findByIdAndUpdate(
+      id,
+      { 
+        featured: false,
+        featuredOrder: 0
+      },
+      { new: true }
+    );
+    
+    if (!updatedAnime) {
+      return res.status(404).json({ success: false, error: 'Anime not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Anime removed from featured',
+      data: updatedAnime 
+    });
+  } catch (err) {
+    console.error('Error removing from featured:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update featured order (bulk update)
+router.put('/featured/order', async (req, res) => {
+  try {
+    const { order } = req.body; // array of anime IDs in desired order
+    
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ success: false, error: 'Order must be an array of anime IDs' });
+    }
+    
+    const bulkOps = order.map((animeId, index) => ({
+      updateOne: {
+        filter: { _id: animeId },
+        update: { 
+          featuredOrder: index + 1,
+          featured: true // Ensure they remain featured
+        }
+      }
+    }));
+    
+    await Anime.bulkWrite(bulkOps);
+    
+    res.json({ 
+      success: true, 
+      message: `Featured order updated for ${order.length} animes` 
+    });
+  } catch (err) {
+    console.error('Error updating featured order:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
