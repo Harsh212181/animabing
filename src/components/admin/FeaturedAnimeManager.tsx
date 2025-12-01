@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { Anime } from '../../types';
 
 interface FeaturedAnimeManagerProps {}
@@ -250,7 +250,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
     return anime._id || anime.id || '';
   };
 
-  // ✅ FIXED: Improved add to featured function
+  // ✅ FIXED: Improved add to featured function with correct API endpoint
   const addToFeatured = async (anime: Anime): Promise<void> => {
     try {
       const animeId = getAnimeId(anime);
@@ -280,18 +280,20 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
       
       console.log(`✅ Added "${anime.title}" to featured. Total: ${updatedFeatured.length}`);
       
-      // Try API call
+      // ✅ FIXED: Use correct API endpoint with absolute URL
       try {
-        const response = await fetch('/api/anime/featured', {
+        const response = await fetch(`https://animabing.onrender.com/api/anime/${animeId}/featured`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ animeId }),
+          }
+          // No body needed for POST to /api/anime/:id/featured
         });
 
         if (response.ok) {
           console.log('✅ Added to featured via API');
+        } else {
+          console.log('⚠️ API call failed, but stored locally');
         }
       } catch (apiError) {
         console.log('⚠️ API call failed, but stored locally');
@@ -302,6 +304,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
     }
   };
 
+  // ✅ FIXED: Improved remove from featured function with correct API endpoint
   const removeFromFeatured = async (animeId: string): Promise<void> => {
     try {
       // Update local state
@@ -315,14 +318,16 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
       
       console.log(`✅ Removed anime from featured. Remaining: ${updated.length}`);
       
-      // Try API call
+      // ✅ FIXED: Use correct API endpoint with absolute URL
       try {
-        const response = await fetch(`/api/anime/featured/${animeId}`, {
+        const response = await fetch(`https://animabing.onrender.com/api/anime/${animeId}/featured`, {
           method: 'DELETE',
         });
 
         if (response.ok) {
           console.log('✅ Removed from featured via API');
+        } else {
+          console.log('⚠️ API call failed, but removed locally');
         }
       } catch (apiError) {
         console.log('⚠️ API call failed, but removed locally');
@@ -333,6 +338,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
     }
   };
 
+  // ✅ FIXED: Improved reorder function with correct API endpoint
   const reorderFeatured = (fromIndex: number, toIndex: number): void => {
     const updated = [...featuredAnimes];
     const [moved] = updated.splice(fromIndex, 1);
@@ -347,9 +353,9 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
     setFeaturedAnimes(withUpdatedOrder);
     localStorage.setItem('featuredAnimes', JSON.stringify(withUpdatedOrder));
     
-    // Try API call
+    // ✅ FIXED: Use correct API endpoint
     try {
-      fetch('/api/anime/featured/order', {
+      fetch('https://animabing.onrender.com/api/anime/featured/order', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -357,6 +363,12 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
         body: JSON.stringify({ 
           order: withUpdatedOrder.map(anime => getAnimeId(anime)) 
         }),
+      }).then(response => {
+        if (response.ok) {
+          console.log('✅ Featured order updated via API');
+        } else {
+          console.log('⚠️ Order update API failed, but stored locally');
+        }
       });
     } catch (error) {
       console.log('⚠️ Order update API failed, but stored locally');
