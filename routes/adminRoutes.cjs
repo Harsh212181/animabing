@@ -1,4 +1,4 @@
- // routes/adminRoutes.cjs - MERGED VERSION WITH FIXED REPORTS ROUTE
+ // routes/adminRoutes.cjs - COMPLETE FIXED VERSION WITH ALL AD ROUTES
 const express = require('express');
 const router = express.Router();
 const Anime = require('../models/Anime.cjs');
@@ -91,11 +91,11 @@ router.delete('/delete-anime', async (req, res) => {
 router.put('/edit-episode/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, cutyLink, secureFileReference, session } = req.body; // ✅ SESSION ADD KARO
+    const { title, cutyLink, secureFileReference, session } = req.body;
 
     const episode = await Episode.findByIdAndUpdate(
       id,
-      { title, cutyLink, secureFileReference, session }, // ✅ SESSION ADD KARO
+      { title, cutyLink, secureFileReference, session },
       { new: true }
     );
 
@@ -145,7 +145,7 @@ router.put('/reports/:id', async (req, res) => {
     // ✅ FIXED: Server automatically sets resolvedBy from admin token
     if (status === 'Fixed') {
       updateData.resolvedAt = new Date();
-      updateData.resolvedBy = req.admin.id; // This comes from adminAuth middleware
+      updateData.resolvedBy = req.admin.id;
     }
 
     const report = await Report.findByIdAndUpdate(
@@ -165,13 +165,12 @@ router.put('/reports/:id', async (req, res) => {
   }
 });
 
-// ✅ DELETE single report - ADD THIS ROUTE
+// ✅ DELETE single report
 router.delete('/reports/:id', async (req, res) => {
   try {
     const { id } = req.params;
     console.log('🗑️ Deleting report with ID:', id);
 
-    // First check if report exists
     const report = await Report.findById(id);
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
@@ -234,30 +233,220 @@ router.put('/social-media/:platform', async (req, res) => {
   }
 });
 
-// ✅ EXISTING AD & ANALYTICS ROUTES (keep as is)
+// ============================================
+// ✅ COMPLETE AD MANAGEMENT ROUTES (UPDATED)
+// ============================================
+
+// GET all ad slots
 router.get('/ad-slots', async (req, res) => {
   try {
-    const adSlots = await AdSlot.find();
+    console.log('📢 Fetching ad slots for admin...');
+    
+    const adSlots = await AdSlot.find().sort({ position: 1 });
+    
+    // If no ad slots exist, create default ones
+    if (adSlots.length === 0) {
+      console.log('🆕 No ad slots found, creating default slots...');
+      await AdSlot.initDefaultSlots();
+      const newAdSlots = await AdSlot.find().sort({ position: 1 });
+      return res.json(newAdSlots);
+    }
+    
+    console.log(`✅ Found ${adSlots.length} ad slots`);
     res.json(adSlots);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('❌ Error fetching ad slots:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
+// UPDATE ad slot
 router.put('/ad-slots/:id', async (req, res) => {
   try {
-    const { adCode, isActive } = req.body;
+    const { id } = req.params;
+    const { adCode, isActive, name } = req.body;
+    
+    console.log(`📢 Updating ad slot ${id}`, { 
+      hasAdCode: !!adCode, 
+      isActive,
+      name 
+    });
+    
+    const updateData = {};
+    if (adCode !== undefined) updateData.adCode = adCode;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (name !== undefined) updateData.name = name;
+    
     const adSlot = await AdSlot.findByIdAndUpdate(
-      req.params.id,
-      { adCode, isActive },
-      { new: true }
+      id,
+      updateData,
+      { new: true, runValidators: true }
     );
-    res.json(adSlot);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    
+    if (!adSlot) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Ad slot not found' 
+      });
+    }
+    
+    console.log(`✅ Ad slot updated: ${adSlot.name} (Active: ${adSlot.isActive})`);
+    
+    res.json({
+      success: true,
+      message: 'Ad slot updated successfully!',
+      adSlot
+    });
+  } catch (error) {
+    console.error('❌ Error updating ad slot:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
+// TRACK ad click
+router.post('/track-ad-click', async (req, res) => {
+  try {
+    const { slotId, earnings = 0.5 } = req.body;
+    
+    console.log(`🎯 Tracking ad click for slot: ${slotId}`);
+    
+    // Update ad slot stats
+    const adSlot = await AdSlot.findByIdAndUpdate(
+      slotId,
+      {
+        $inc: {
+          clicks: 1,
+          earnings: earnings,
+          impressions: 1
+        }
+      },
+      { new: true }
+    );
+    
+    if (!adSlot) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ad slot not found'
+      });
+    }
+    
+    // Record in analytics
+    await Analytics.recordVisit(req, earnings);
+    
+    res.json({
+      success: true,
+      message: 'Ad click tracked successfully!',
+      adSlot,
+      earningsAdded: earnings
+    });
+  } catch (error) {
+    console.error('❌ Error tracking ad click:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// GET ad analytics
+router.get('/ad-analytics', async (req, res) => {
+  try {
+    const { range = 'today' } = req.query;
+    
+    console.log(`📊 Fetching ad analytics for range: ${range}`);
+    
+    // Get all ad slots data
+    const adSlots = await AdSlot.find();
+    
+    // Calculate totals
+    const totalImpressions = adSlots.reduce((sum, slot) => sum + (slot.impressions || 0), 0);
+    const totalClicks = adSlots.reduce((sum, slot) => sum + (slot.clicks || 0), 0);
+    const totalEarnings = adSlots.reduce((sum, slot) => sum + (slot.earnings || 0), 0);
+    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions * 100).toFixed(2) : 0;
+    
+    // Get active ads count
+    const activeAds = adSlots.filter(slot => slot.isActive).length;
+    
+    res.json({
+      success: true,
+      adPerformance: {
+        totalImpressions,
+        totalClicks,
+        totalRevenue: totalEarnings,
+        ctr: parseFloat(ctr),
+        activeAds
+      },
+      adSlots: adSlots.map(slot => ({
+        id: slot._id,
+        name: slot.name,
+        position: slot.position,
+        isActive: slot.isActive,
+        earnings: slot.earnings || 0,
+        clicks: slot.clicks || 0,
+        impressions: slot.impressions || 0,
+        ctr: slot.impressions > 0 ? ((slot.clicks / slot.impressions) * 100).toFixed(2) : 0
+      })),
+      topPerformingSlots: adSlots
+        .filter(slot => slot.earnings > 0)
+        .sort((a, b) => (b.earnings || 0) - (a.earnings || 0))
+        .slice(0, 3)
+        .map(slot => ({
+          name: slot.name,
+          position: slot.position,
+          earnings: slot.earnings || 0,
+          clicks: slot.clicks || 0,
+          ctr: slot.impressions > 0 ? ((slot.clicks / slot.impressions) * 100).toFixed(2) : 0
+        }))
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching ad analytics:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// INCREMENT ad impressions
+router.post('/increment-impression/:slotId', async (req, res) => {
+  try {
+    const { slotId } = req.params;
+    
+    const adSlot = await AdSlot.findByIdAndUpdate(
+      slotId,
+      { $inc: { impressions: 1 } },
+      { new: true }
+    );
+    
+    if (!adSlot) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ad slot not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Impression incremented',
+      impressions: adSlot.impressions
+    });
+  } catch (error) {
+    console.error('❌ Error incrementing impression:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// ✅ EXISTING ANALYTICS ROUTE (keep as is)
 router.get('/analytics', async (req, res) => {
   try {
     const totalAnimes = await Anime.countDocuments({ contentType: 'Anime' });
@@ -268,7 +457,7 @@ router.get('/analytics', async (req, res) => {
     const totalReports = await Report.countDocuments();
     const pendingReports = await Report.countDocuments({ status: 'Pending' });
 
-    // ✅ FIX: Get today's date properly
+    // Get today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -279,7 +468,7 @@ router.get('/analytics', async (req, res) => {
       }
     });
 
-    // ✅ FIX: Proper aggregation with error handling
+    // Aggregation for all-time stats
     let allTimeStats;
     try {
       allTimeStats = await Analytics.aggregate([
@@ -303,6 +492,13 @@ router.get('/analytics', async (req, res) => {
       totalEarnings: 0
     };
 
+    // Get ad performance data
+    const adSlots = await AdSlot.find();
+    const totalAdImpressions = adSlots.reduce((sum, slot) => sum + (slot.impressions || 0), 0);
+    const totalAdClicks = adSlots.reduce((sum, slot) => sum + (slot.clicks || 0), 0);
+    const totalAdRevenue = adSlots.reduce((sum, slot) => sum + (slot.earnings || 0), 0);
+    const adCtr = totalAdImpressions > 0 ? (totalAdClicks / totalAdImpressions * 100).toFixed(2) : 0;
+
     res.json({
       totalAnimes,
       totalMovies,
@@ -318,10 +514,10 @@ router.get('/analytics', async (req, res) => {
       todayPageViews: todayStats ? todayStats.pageViews : 0,
       totalPageViews: totals.totalPageViews || 0,
       adPerformance: {
-        totalImpressions: 0,
-        totalClicks: 0,
-        totalRevenue: 0,
-        ctr: 0
+        totalImpressions: totalAdImpressions,
+        totalClicks: totalAdClicks,
+        totalRevenue: totalAdRevenue,
+        ctr: parseFloat(adCtr)
       },
       weeklyStats: [],
       deviceStats: { desktop: 60, mobile: 35, tablet: 5 },
@@ -336,6 +532,7 @@ router.get('/analytics', async (req, res) => {
   }
 });
 
+// ✅ GET user info
 router.get('/user-info', async (req, res) => {
   try {
     const Admin = require('../models/Admin.cjs');
