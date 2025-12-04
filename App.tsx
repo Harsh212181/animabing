@@ -1,4 +1,4 @@
-   // App.tsx - UPDATED WITH PROPER ROUTES
+  // App.tsx - UPDATED WITH DOWNLOAD ROUTE
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import AnimeListPage from './components/AnimeListPage';
 import AnimeDetailPage from './components/AnimeDetailPage';
+import DownloadRedirectPage from './components/DownloadRedirectPage'; // ✅ ADDED
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Spinner from './components/Spinner';
 import AdminLogin from './src/components/admin/AdminLogin';
@@ -338,6 +339,10 @@ const MainApp: React.FC = () => {
           } />
           
           <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={handleBack} />} />
+          
+          {/* ✅ Download Redirect Route - ADDED */}
+          <Route path="/download" element={<DownloadRedirectPage />} />
+          
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<TermsAndConditions />} />
