@@ -1,4 +1,4 @@
-  // components/AnimeDetailPage.tsx - UPDATED WITH DOWNLOAD REDIRECT
+  // components/AnimeDetailPage.tsx - UPDATED WITH MOVIE TEXT AND CORRECTED CHAPTER/EPISODE LABELS
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom'; // ✅ ADDED
 import type { Anime, Episode, Chapter } from '../src/types';
@@ -31,8 +31,28 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
   const [fullAnime, setFullAnime] = useState<Anime | null>(null);
   const [animeLoading, setAnimeLoading] = useState(false);
 
-  // Check if content is Manga
+  // Check content types
   const isManga = anime?.contentType === 'Manga';
+  const isMovie = anime?.contentType === 'Movie';
+
+  // ✅ GET CONTENT LABEL FOR UI
+  const getContentLabel = () => {
+    if (isManga) return 'Episodes'; // Changed from 'Chapters' to 'Episodes'
+    if (isMovie) return 'Movie';
+    return 'Episodes';
+  };
+
+  const getContentLabelSingular = () => {
+    if (isManga) return 'Episode'; // Changed from 'Chapter' to 'Episode'
+    if (isMovie) return 'Movie';
+    return 'Episode';
+  };
+
+  const getNoContentMessage = () => {
+    if (isManga) return 'Episodes will be added soon!'; // Changed from 'Chapters' to 'Episodes'
+    if (isMovie) return 'Movie will be added soon!';
+    return 'Episodes will be added soon!';
+  };
 
   // ✅ FETCH FULL ANIME DETAILS IF NEEDED
   useEffect(() => {
@@ -185,9 +205,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     // If no download link, show message
     if (!item.cutyLink) {
       alert(
-        `${isManga ? 'Chapter' : 'Episode'} ${
-          isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
-        } - Download link will be added soon!`
+        `${getContentLabelSingular()} - Download link will be added soon!`
       );
       setTimeout(() => setShowDownloadModal(false), 3000);
       return;
@@ -198,10 +216,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     
     if (fileId) {
       // Create download page URL with parameters
-      const fileName = item.title || 
-        `${isManga ? 'Chapter' : 'Episode'} ${
-          isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
-        }`;
+      const fileName = item.title || `${getContentLabelSingular()}`;
       
       // Redirect to download page after a short delay (for modal effect)
       setTimeout(() => {
@@ -230,9 +245,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
         <button
           onClick={() => {
             alert(
-              `${isManga ? 'Chapter' : 'Episode'} ${
-                isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
-              } - Download link will be added soon!`
+              `${getContentLabelSingular()} - Download link will be added soon!`
             );
           }}
           className={className}
@@ -244,10 +257,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     }
     
     const fileId = extractFileIdFromUrl(item.cutyLink);
-    const fileName = item.title || 
-      `${isManga ? 'Chapter' : 'Episode'} ${
-        isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
-      }`;
+    const fileName = item.title || `${getContentLabelSingular()}`;
     
     if (fileId) {
       // Use Link for client-side navigation (better UX)
@@ -430,18 +440,18 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             </div>
           )}
 
-          {/* Mobile Episodes/Chapters Section - No top margin to remove gap */}
+          {/* Mobile Episodes/Movie Section - No top margin to remove gap */}
           <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 mt-0 border border-slate-700 shadow-xl">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-bold text-white">
-                {isManga ? 'Chapters' : 'Episodes'}{' '}
+                {getContentLabel()}{' '}
                 {currentSessionItems.length > 0 && `(${currentSessionItems.length})`}
               </h2>
             </div>
             {(isManga ? chaptersLoading : episodesLoading) ? (
               <div className="flex justify-center py-6">
                 <div className="text-center">
-                  <Spinner size="sm" text={`Loading ${isManga ? 'chapters' : 'episodes'}...`} />
+                  <Spinner size="sm" text={`Loading ${getContentLabel().toLowerCase()}...`} />
                 </div>
               </div>
             ) : error && !(isManga ? chaptersLoading : episodesLoading) ? (
@@ -455,10 +465,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
               <div className="text-center py-6">
                 <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
                   <h3 className="text-sm font-semibold text-slate-300 mb-1">
-                    No {isManga ? 'Chapters' : 'Episodes'} Available
+                    No {getContentLabel()} Available
                   </h3>
                   <p className="text-slate-400 text-xs">
-                    {isManga ? 'Chapters' : 'Episodes'} will be added soon!
+                    {getNoContentMessage()}
                   </p>
                 </div>
               </div>
@@ -478,42 +488,40 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                       className="group bg-slate-700/30 hover:bg-slate-600/40 rounded-lg p-2 transition-all duration-200 border border-slate-600 hover:border-purple-500/50 backdrop-blur-sm"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        {/* Episode Info */}
+                        {/* Episode/Movie Info */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {/* Episode Number */}
+                          {/* Episode/Movie Number Badge - Always show EP for all types except Movie */}
                           <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded text-xs font-bold min-w-10 text-center flex-shrink-0">
-                            {isManga ? 'CH' : 'EP'}{' '}
+                            {isMovie ? 'MOVIE' : 'EP'}{' '}
                             {isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber}
                           </div>
                           {/* Title - Truncate only very long titles */}
                           <div className="flex-1 min-w-0">
                             <h3 className="text-white font-medium text-xs break-words">
                               {item.title ||
-                                `${isManga ? 'Chapter' : 'Episode'} ${
+                                `${getContentLabelSingular()} ${
                                   isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
                                 }`}
                             </h3>
                           </div>
                         </div>
-                        {/* Action Buttons */}
+                        {/* Action Buttons - FIXED: Same size for download and report buttons */}
                         <div className="flex gap-1 flex-shrink-0">
-                          {/* ✅ UPDATED: Download Button with redirect */}
+                          {/* ✅ UPDATED: Download Button with redirect - SAME SIZE AS REPORT BUTTON */}
                           <DownloadLink
                             item={item}
-                            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white p-1.5 rounded transition-all duration-300 font-medium flex items-center justify-center hover:scale-105 active:scale-95"
+                            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white p-2 rounded-lg shadow-lg hover:shadow-blue-500/20 transition-all duration-200 flex items-center justify-center"
                             showText={false}
                           />
-                          {/* Report Button - Icon Only */}
-                          <div className="scale-90">
-                            <ReportButton
-                              animeId={anime.id}
-                              episodeId={item._id}
-                              episodeNumber={
-                                isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
-                              }
-                              animeTitle={anime.title}
-                            />
-                          </div>
+                          {/* Report Button - Icon Only - SAME SIZE AS DOWNLOAD BUTTON */}
+                          <ReportButton
+                            animeId={anime.id}
+                            episodeId={item._id}
+                            episodeNumber={
+                              isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
+                            }
+                            animeTitle={anime.title}
+                          />
                         </div>
                       </div>
                     </div>
@@ -616,11 +624,11 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             </div>
           </div>
 
-          {/* Enhanced Episodes/Chapters Section - ORIGINAL PC LAYOUT */}
+          {/* Enhanced Episodes/Movie Section - ORIGINAL PC LAYOUT */}
           <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                {isManga ? 'Chapters' : 'Episodes'}{' '}
+                {getContentLabel()}{' '}
                 {currentSessionItems.length > 0 && `(${currentSessionItems.length})`}
               </h2>
               {/* Session Selector */}
@@ -645,7 +653,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             {(isManga ? chaptersLoading : episodesLoading) ? (
               <div className="flex justify-center py-12">
                 <div className="text-center">
-                  <Spinner size="lg" text={`Loading ${isManga ? 'chapters' : 'episodes'}...`} />
+                  <Spinner size="lg" text={`Loading ${getContentLabel().toLowerCase()}...`} />
                 </div>
               </div>
             ) : error && !(isManga ? chaptersLoading : episodesLoading) ? (
@@ -659,10 +667,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
               <div className="text-center py-16">
                 <div className="bg-slate-800/50 rounded-2xl p-12 max-w-md mx-auto border border-slate-700">
                   <h3 className="text-xl font-semibold text-slate-300 mb-3">
-                    No {isManga ? 'Chapters' : 'Episodes'} Available
+                    No {getContentLabel()} Available
                   </h3>
                   <p className="text-slate-400">
-                    {isManga ? 'Chapters' : 'Episodes'} will be added soon!
+                    {getNoContentMessage()}
                   </p>
                 </div>
               </div>
@@ -684,10 +692,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Item Info */}
                         <div className="flex items-start sm:items-center gap-4 flex-1">
-                          {/* Number Badge */}
+                          {/* Number Badge - Always show EP for all types except Movie */}
                           <div className="flex items-center gap-3">
                             <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-bold min-w-16 text-center">
-                              {isManga ? 'CH' : 'EP'}{' '}
+                              {isMovie ? 'MOVIE' : 'EP'}{' '}
                               {isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber}
                             </span>
                           </div>
@@ -695,7 +703,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                           <div className="flex-1 min-w-0">
                             <h3 className="text-white font-semibold text-lg truncate">
                               {item.title ||
-                                `${isManga ? 'Chapter' : 'Episode'} ${
+                                `${getContentLabelSingular()} ${
                                   isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber
                                 }`}
                             </h3>
@@ -741,8 +749,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
               </div>
               <h3 className="text-base font-bold text-purple-400 mb-2">Preparing Your Download</h3>
               <p className="text-slate-300 text-sm mb-3">
-                {isManga ? 'Chapter' : 'Episode'}{' '}
-                {isManga ? selectedChapter?.chapterNumber : selectedEpisode?.episodeNumber} is being prepared...
+                {getContentLabelSingular()} is being prepared...
               </p>
               <Spinner size="sm" />
               <div className="mt-3 bg-slate-800/50 rounded-lg p-2">
