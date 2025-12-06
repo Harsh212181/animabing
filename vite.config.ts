@@ -1,4 +1,4 @@
- // vite.config.ts
+  // vite.config.ts
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -41,6 +41,16 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, 'src'),
         '@components': path.resolve(__dirname, 'components'),
         '@types': path.resolve(__dirname, 'src/types'),
+      },
+    },
+    // ✅ YE NAYA SECTION ADD KAREIN (Production mein console hide karne ke liye)
+    build: {
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,      // Saare console logs remove
+          drop_debugger: true,     // Debugger bhi remove
+        },
       },
     },
   };
