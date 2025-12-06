@@ -1,4 +1,14 @@
-  // App.tsx - UPDATED WITH DOWNLOAD ROUTE
+  // App.tsx - UPDATED WITH DOWNLOAD ROUTE AND CONSOLE DISABLE
+
+// ⭐⭐⭐ SABSE PEHLE YE 4 LINES ADD KAREIN ⭐⭐⭐
+if (import.meta.env.PROD) {
+  // Saare console methods completely disable karein
+  console.log = console.info = console.debug = console.warn = 
+  console.error = console.trace = console.table = console.dir = 
+  console.group = console.groupEnd = console.groupCollapsed = 
+  console.time = console.timeEnd = () => {};
+}
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
@@ -36,15 +46,25 @@ const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
 
       try {
-        console.log('🔍 Fetching anime data for ID:', animeId);
+        // Production mein log show nahi hoga
+        if (import.meta.env.DEV) {
+          console.log('🔍 Fetching anime data for ID:', animeId);
+        }
+        
         setIsLoading(true);
         setError(null);
         
         const allAnime = await getAllAnime();
-        console.log('📚 All anime loaded:', allAnime.length);
+        
+        if (import.meta.env.DEV) {
+          console.log('📚 All anime loaded:', allAnime.length);
+        }
         
         const foundAnime = allAnime.find(a => a.id === animeId || a._id === animeId);
-        console.log('🎯 Found anime:', foundAnime);
+        
+        if (import.meta.env.DEV) {
+          console.log('🎯 Found anime:', foundAnime);
+        }
         
         if (foundAnime) {
           setAnime(foundAnime);
@@ -52,7 +72,10 @@ const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           setError('Anime not found');
         }
       } catch (err) {
-        console.error('❌ Error fetching anime:', err);
+        // Error sirf development mein show hoga
+        if (import.meta.env.DEV) {
+          console.error('❌ Error fetching anime:', err);
+        }
         setError('Failed to load anime data');
       } finally {
         setIsLoading(false);
@@ -125,33 +148,32 @@ const MainApp: React.FC = () => {
   const [showAdminButton, setShowAdminButton] = useState(false);
 
   useEffect(() => {
-    console.log('📍 URL Changed:', location.search);
-    
-    const urlContentType = searchParams.get('contentType') as ContentTypeFilter | null;
-    const urlFilter = searchParams.get('filter') as FilterType | null;
-    const urlSearchQuery = searchParams.get('search') || '';
+    // Sirf development mode mein logs show karein
+    if (import.meta.env.DEV) {
+      console.log('📍 URL Changed:', location.search);
+      
+      const urlContentType = searchParams.get('contentType') as ContentTypeFilter | null;
+      const urlFilter = searchParams.get('filter') as FilterType | null;
+      const urlSearchQuery = searchParams.get('search') || '';
 
-    console.log('📋 URL Parameters:', {
-      contentType: urlContentType,
-      filter: urlFilter,
-      searchQuery: urlSearchQuery
-    });
+      console.log('📋 URL Parameters:', {
+        contentType: urlContentType,
+        filter: urlFilter,
+        searchQuery: urlSearchQuery
+      });
 
-    if (urlContentType && urlContentType !== contentType) {
-      console.log('🔄 Updating contentType from URL:', urlContentType);
-      setContentType(urlContentType);
+      if (urlContentType && urlContentType !== contentType) {
+        console.log('🔄 Updating contentType from URL:', urlContentType);
+      }
+
+      if (urlFilter && urlFilter !== filter) {
+        console.log('🔄 Updating filter from URL:', urlFilter);
+      }
+
+      if (urlSearchQuery && urlSearchQuery !== searchQuery) {
+        console.log('🔄 Updating searchQuery from URL:', urlSearchQuery);
+      }
     }
-
-    if (urlFilter && urlFilter !== filter) {
-      console.log('🔄 Updating filter from URL:', urlFilter);
-      setFilter(urlFilter);
-    }
-
-    if (urlSearchQuery && urlSearchQuery !== searchQuery) {
-      console.log('🔄 Updating searchQuery from URL:', urlSearchQuery);
-      setSearchQuery(urlSearchQuery);
-    }
-
   }, [location.search, searchParams]);
 
   useEffect(() => {
@@ -178,8 +200,13 @@ const MainApp: React.FC = () => {
     const newSearch = currentParams.toString();
     const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
     
+    if (import.meta.env.DEV) {
+      if (newUrl !== location.pathname + location.search) {
+        console.log('🔗 Updating URL:', newUrl);
+      }
+    }
+    
     if (newUrl !== location.pathname + location.search) {
-      console.log('🔗 Updating URL:', newUrl);
       navigate(newUrl, { replace: true });
     }
   }, [contentType, filter, searchQuery, navigate, location]);
@@ -195,7 +222,10 @@ const MainApp: React.FC = () => {
           setIsAdminAuthenticated(true);
         }
       } catch (error) {
-        console.error('App initialization error:', error);
+        // Sirf development mein error show karein
+        if (import.meta.env.DEV) {
+          console.error('App initialization error:', error);
+        }
       } finally {
         setIsAppLoading(false);
       }
