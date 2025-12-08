@@ -359,7 +359,7 @@ const HomePage: React.FC<Props> = ({
                 {getAllContentHeading()}
               </h2>
              
-              {/* ALL ANIME CARDS IN SINGLE GRID */}
+              {/* ALL ANIME CARDS IN SINGLE GRID - WITH STATUS BADGE */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
                 {filteredAnime.map((anime, index) => (
                   <AnimeCard
@@ -367,6 +367,7 @@ const HomePage: React.FC<Props> = ({
                     anime={anime}
                     onClick={onAnimeSelect}
                     index={index}
+                    showStatus={true}
                   />
                 ))}
               </div>
