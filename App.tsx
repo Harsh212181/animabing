@@ -1,5 +1,4 @@
-  // App.tsx - UPDATED WITH DOWNLOAD ROUTE AND CONSOLE DISABLE
-
+  // App.tsx - UPDATED WITH BOTH DOWNLOAD ROUTES
 // ⭐⭐⭐ SABSE PEHLE YE 4 LINES ADD KAREIN ⭐⭐⭐
 if (import.meta.env.PROD) {
   // Saare console methods completely disable karein
@@ -370,8 +369,9 @@ const MainApp: React.FC = () => {
           
           <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={handleBack} />} />
           
-          {/* ✅ Download Redirect Route - ADDED */}
+          {/* ✅ FIXED: Both Download Routes Added */}
           <Route path="/download" element={<DownloadRedirectPage />} />
+          <Route path="/download-redirect" element={<DownloadRedirectPage />} />
           
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dmca" element={<DMCA />} />
