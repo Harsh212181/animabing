@@ -1,10 +1,18 @@
-  // EpisodesManager.tsx - REFRESH BUTTON FIXED
+  // src/components/admin/EpisodesManager.tsx - UPDATED FOR MULTIPLE DOWNLOAD LINKS
 
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../../types';
 import axios from 'axios';
 import Spinner from '../Spinner';
 import SearchableDropdown from './SearchableDropdown';
+
+// ✅ Define DownloadLink interface locally
+interface DownloadLink {
+  name: string;
+  url: string;
+  quality?: string;
+  type?: string;
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 const token = localStorage.getItem('adminToken') || '';
@@ -18,7 +26,7 @@ const EpisodesManager: React.FC = () => {
     number: 1,
     title: '',
     session: 1,
-    cutyLink: '' // ✅ DOWNLOAD LINK KA FIELD ADD KARO
+    downloadLinks: [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }] as DownloadLink[]
   });
   const [loading, setLoading] = useState(true);
   const [animesLoading, setAnimesLoading] = useState(true);
@@ -44,11 +52,11 @@ const EpisodesManager: React.FC = () => {
     fetchAnimes();
   }, []);
 
-  // ✅ REFRESH KA FUNCTION - YEH FIX HAI
+  // ✅ REFRESH FUNCTION
   const handleRefresh = async () => {
     setAnimesLoading(true);
     try {
-      // 1. PEHLE ANIME LIST REFRESH KARO
+      // 1. Refresh anime list
       const { data } = await axios.get(`${API_BASE}/admin/protected/anime-list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -60,17 +68,14 @@ const EpisodesManager: React.FC = () => {
       
       setAnimes(updatedAnimes);
       
-      // 2. AGAR SELECTED ANIME HAI TOH EPISODES/CHAPTERS BHI REFRESH KARO
+      // 2. If selected anime exists, refresh episodes/chapters
       if (selectedAnime) {
-        // SELECTED ANIME KO UPDATE KARO AGAR NEW LIST ME HAI
         const updatedSelectedAnime = updatedAnimes.find((a: Anime) => a.id === selectedAnime.id);
         
         if (updatedSelectedAnime) {
           setSelectedAnime(updatedSelectedAnime);
-          // CONTENT BHI REFRESH KARO
           await fetchContent(updatedSelectedAnime.id);
         } else {
-          // AGAR SELECTED ANIME DELETE HO GAYA TOH
           setSelectedAnime(null);
           setEpisodes([]);
           setChapters([]);
@@ -125,7 +130,7 @@ const EpisodesManager: React.FC = () => {
           ...prev,
           number: lastChapter.length > 0 ? Math.max(...lastChapter.map((ch: Chapter) => ch.chapterNumber)) + 1 : 1,
           session: selectedSession,
-          cutyLink: '' // ✅ RESET DOWNLOAD LINK
+          downloadLinks: [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }]
         }));
       } else {
         const { data } = await axios.get(`${API_BASE}/episodes/${contentId}`);
@@ -135,7 +140,7 @@ const EpisodesManager: React.FC = () => {
           ...prev,
           number: lastEpisode.length > 0 ? Math.max(...lastEpisode.map((ep: Episode) => ep.episodeNumber)) + 1 : 1,
           session: selectedSession,
-          cutyLink: '' // ✅ RESET DOWNLOAD LINK
+          downloadLinks: [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }]
         }));
       }
     } catch (err: any) {
@@ -150,11 +155,21 @@ const EpisodesManager: React.FC = () => {
   const handleEditItem = (item: Episode | Chapter) => {
     setEditingItem(item);
     setIsEditing(true);
+    
+    // ✅ Get downloadLinks from item (cast to any to access downloadLinks)
+    const itemData = item as any;
+    const downloadLinks: DownloadLink[] = itemData.downloadLinks || [];
+    
+    // If no download links, add one default
+    const linksToSet = downloadLinks.length > 0 
+      ? downloadLinks 
+      : [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }];
+    
     setNewItem({
       number: isManga ? (item as Chapter).chapterNumber : (item as Episode).episodeNumber,
       title: item.title || '',
       session: item.session || 1,
-      cutyLink: item.cutyLink || '' // ✅ CURRENT DOWNLOAD LINK SHOW KARO
+      downloadLinks: linksToSet
     });
   };
 
@@ -167,7 +182,7 @@ const EpisodesManager: React.FC = () => {
       number: nextNumber,
       title: '',
       session: selectedSession,
-      cutyLink: '' // ✅ RESET DOWNLOAD LINK
+      downloadLinks: [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }]
     });
   };
 
@@ -178,6 +193,83 @@ const EpisodesManager: React.FC = () => {
     return Math.max(...numbers) + 1;
   };
 
+  // ✅ Add a new download link
+  const handleAddDownloadLink = () => {
+    if (newItem.downloadLinks.length >= 5) {
+      alert('Maximum 5 download links allowed');
+      return;
+    }
+    
+    setNewItem(prev => ({
+      ...prev,
+      downloadLinks: [
+        ...prev.downloadLinks,
+        { 
+          name: `Download Link ${prev.downloadLinks.length + 1}`, 
+          url: '', 
+          quality: '', 
+          type: 'direct' 
+        }
+      ]
+    }));
+  };
+
+  // ✅ Remove a download link
+  const handleRemoveDownloadLink = (index: number) => {
+    if (newItem.downloadLinks.length <= 1) {
+      alert('At least one download link is required');
+      return;
+    }
+    
+    setNewItem(prev => ({
+      ...prev,
+      downloadLinks: prev.downloadLinks.filter((_, i) => i !== index)
+    }));
+  };
+
+  // ✅ Update download link
+  const handleUpdateDownloadLink = (index: number, field: keyof DownloadLink, value: string) => {
+    setNewItem(prev => ({
+      ...prev,
+      downloadLinks: prev.downloadLinks.map((link, i) => 
+        i === index ? { ...link, [field]: value } : link
+      )
+    }));
+  };
+
+  // ✅ Validate download links
+  const validateDownloadLinks = (): boolean => {
+    const links = newItem.downloadLinks;
+    
+    if (links.length === 0) {
+      alert('At least one download link is required');
+      return false;
+    }
+    
+    if (links.length > 5) {
+      alert('Maximum 5 download links allowed');
+      return false;
+    }
+    
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
+      if (!link.name.trim()) {
+        alert(`Download link ${i + 1} must have a name`);
+        return false;
+      }
+      if (!link.url.trim()) {
+        alert(`Download link ${i + 1} must have a URL`);
+        return false;
+      }
+      if (!link.url.startsWith('http')) {
+        alert(`Download link ${i + 1} must be a valid URL starting with http:// or https://`);
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   // Add/Edit Item Function
   const handleSubmitItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,15 +278,8 @@ const EpisodesManager: React.FC = () => {
       return;
     }
 
-    // ✅ DOWNLOAD LINK VALIDATION
-    if (!newItem.cutyLink.trim()) {
-      alert('Please enter a download link');
-      return;
-    }
-
-    // ✅ BASIC URL VALIDATION
-    if (!newItem.cutyLink.startsWith('http')) {
-      alert('Please enter a valid URL starting with http:// or https://');
+    // ✅ Validate download links
+    if (!validateDownloadLinks()) {
       return;
     }
 
@@ -221,14 +306,14 @@ const EpisodesManager: React.FC = () => {
           chapterNumber: newItem.number,
           title: newItem.title || `Chapter ${newItem.number}`,
           session: newItem.session,
-          cutyLink: newItem.cutyLink.trim() // ✅ DOWNLOAD LINK ADD KARO
+          downloadLinks: newItem.downloadLinks // ✅ Send downloadLinks array
         }
       : {
           animeId: selectedAnime.id,
           episodeNumber: newItem.number,
           title: newItem.title || `Episode ${newItem.number}`,
           session: newItem.session,
-          cutyLink: newItem.cutyLink.trim() // ✅ DOWNLOAD LINK ADD KARO
+          downloadLinks: newItem.downloadLinks // ✅ Send downloadLinks array
         };
 
     await axios.post(`${API_BASE}${endpoint}`, requestBody, {
@@ -254,14 +339,14 @@ const EpisodesManager: React.FC = () => {
           chapterNumber: (editingItem as Chapter).chapterNumber,
           title: newItem.title || `Chapter ${newItem.number}`,
           session: newItem.session,
-          cutyLink: newItem.cutyLink.trim() // ✅ DOWNLOAD LINK UPDATE KARO
+          downloadLinks: newItem.downloadLinks // ✅ Send downloadLinks array
         }
       : {
           animeId: selectedAnime.id,
           episodeNumber: (editingItem as Episode).episodeNumber,
           title: newItem.title || `Episode ${newItem.number}`,
           session: newItem.session,
-          cutyLink: newItem.cutyLink.trim() // ✅ DOWNLOAD LINK UPDATE KARO
+          downloadLinks: newItem.downloadLinks // ✅ Send downloadLinks array
         };
 
     await axios.patch(`${API_BASE}${endpoint}`, requestBody, {
@@ -285,7 +370,7 @@ const EpisodesManager: React.FC = () => {
       number: nextNumber,
       title: '',
       session: selectedSession,
-      cutyLink: '' // ✅ RESET DOWNLOAD LINK
+      downloadLinks: [{ name: 'Download Link 1', url: '', quality: '', type: 'direct' }]
     });
   };
 
@@ -318,7 +403,7 @@ const EpisodesManager: React.FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Manage {isManga ? 'Chapters' : 'Episodes'}</h2>
         <button
-          onClick={handleRefresh} // ✅ NAYA REFRESH FUNCTION USE KARO
+          onClick={handleRefresh}
           disabled={animesLoading}
           className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2"
         >
@@ -442,21 +527,95 @@ const EpisodesManager: React.FC = () => {
             </div>
           </div>
 
-          {/* ✅ DOWNLOAD LINK FIELD - YEH NAYA FIELD HAI */}
+          {/* ✅ DOWNLOAD LINKS SECTION - UPDATED FOR MULTIPLE LINKS */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Download Link (Required) *
-            </label>
-            <input
-              type="url"
-              value={newItem.cutyLink}
-              onChange={(e) => setNewItem({ ...newItem, cutyLink: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-              placeholder="https://cuty.io/abc123 or https://drive.google.com/..."
-              required
-            />
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-slate-300">
+                Download Links (Required) *
+              </label>
+              <button
+                type="button"
+                onClick={handleAddDownloadLink}
+                disabled={newItem.downloadLinks.length >= 5}
+                className="text-xs bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white px-2 py-1 rounded"
+              >
+                + Add Link (Max 5)
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {newItem.downloadLinks.map((link, index) => (
+                <div key={index} className="bg-slate-800/70 p-3 rounded-lg border border-slate-700">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-slate-300 font-medium">Download Link {index + 1}</span>
+                    {newItem.downloadLinks.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDownloadLink(index)}
+                        className="text-xs bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Link Name *</label>
+                      <input
+                        type="text"
+                        value={link.name}
+                        onChange={(e) => handleUpdateDownloadLink(index, 'name', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
+                        placeholder="e.g., Download Link 1, Server 1, etc."
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Quality (Optional)</label>
+                      <input
+                        type="text"
+                        value={link.quality || ''}
+                        onChange={(e) => handleUpdateDownloadLink(index, 'quality', e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
+                        placeholder="e.g., 720p, HD, 1080p"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <label className="block text-xs text-slate-400 mb-1">Download URL *</label>
+                    <input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => handleUpdateDownloadLink(index, 'url', e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
+                      placeholder="https://example.com/download/video.mp4"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="mt-3">
+                    <label className="block text-xs text-slate-400 mb-1">Type (Optional)</label>
+                    <select
+                      value={link.type || 'direct'}
+                      onChange={(e) => handleUpdateDownloadLink(index, 'type', e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="direct">Direct Download</option>
+                      <option value="server">Server Download</option>
+                      <option value="google_drive">Google Drive</option>
+                      <option value="mega">Mega.nz</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
             <p className="text-slate-400 text-xs mt-2">
-              💡 Paste your shortened download link (cuty.io, ouo.io, etc.) or direct download URL
+              💡 You can add up to 5 download links. At least one link with name and URL is required.
             </p>
           </div>
 
@@ -500,15 +659,15 @@ const EpisodesManager: React.FC = () => {
             )}
           </div>
 
-          {/* Link Shortening Tips */}
+          {/* Download Links Tips */}
           <div className="bg-blue-600/20 p-4 rounded-lg border border-blue-500/30">
-            <h4 className="text-blue-400 font-semibold mb-2">🔗 Link Shortening Services:</h4>
+            <h4 className="text-blue-400 font-semibold mb-2">🔗 Multiple Download Links:</h4>
             <div className="text-blue-300 text-sm space-y-1">
-              <p>• <strong>cuty.io</strong> - Free URL shortener</p>
-              <p>• <strong>ouo.io</strong> - Earn money from links</p>
-              <p>• <strong>shorte.st</strong> - Premium shortening</p>
-              <p>• <strong>Google Drive</strong> - Direct download links</p>
-              <p>• <strong>Mega.nz</strong> - Cloud storage links</p>
+              <p>• <strong>Minimum 1, Maximum 5</strong> download links per episode/chapter</p>
+              <p>• Each link must have a <strong>name</strong> and <strong>URL</strong></p>
+              <p>• Use <strong>quality</strong> field to indicate video quality (HD, 720p, 1080p)</p>
+              <p>• <strong>Type</strong> helps categorize the download source</p>
+              <p>• Users will see all links and can choose which one to download</p>
             </div>
           </div>
         </form>
@@ -541,57 +700,72 @@ const EpisodesManager: React.FC = () => {
                     <th className="p-3 text-left text-slate-300 font-medium">#</th>
                     <th className="p-3 text-left text-slate-300 font-medium">Session</th>
                     <th className="p-3 text-left text-slate-300 font-medium">Title</th>
-                    <th className="p-3 text-left text-slate-300 font-medium">Download Link</th> {/* ✅ NAYA COLUMN */}
+                    <th className="p-3 text-left text-slate-300 font-medium">Download Links</th>
                     <th className="p-3 text-left text-slate-300 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700">
-                  {filteredItems.map((item: any) => (
-                    <tr key={item._id} className="hover:bg-slate-600/30 transition-colors">
-                      <td className="p-3 font-mono text-slate-300">
-                        {isManga ? item.chapterNumber : item.episodeNumber}
-                      </td>
-                      <td className="p-3">
-                        <span className="text-blue-400 bg-blue-600/20 px-2 py-1 rounded text-xs">
-                          S{item.session || 1}
-                        </span>
-                      </td>
-                      <td className="p-3 text-white">{item.title}</td>
-                      <td className="p-3">
-                        {item.cutyLink ? (
-                          <a 
-                            href={item.cutyLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 text-sm break-all max-w-xs block truncate"
-                            title={item.cutyLink}
-                          >
-                            🔗 {item.cutyLink}
-                          </a>
-                        ) : (
-                          <span className="text-slate-500 text-sm">No download link</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors"
-                            title="Edit"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item._id, isManga ? item.chapterNumber : item.episodeNumber, item.session || 1)}
-                            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm transition-colors"
-                            title="Delete"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredItems.map((item: any) => {
+                    const downloadLinks: DownloadLink[] = item.downloadLinks || [];
+                    return (
+                      <tr key={item._id} className="hover:bg-slate-600/30 transition-colors">
+                        <td className="p-3 font-mono text-slate-300">
+                          {isManga ? item.chapterNumber : item.episodeNumber}
+                        </td>
+                        <td className="p-3">
+                          <span className="text-blue-400 bg-blue-600/20 px-2 py-1 rounded text-xs">
+                            S{item.session || 1}
+                          </span>
+                        </td>
+                        <td className="p-3 text-white">{item.title}</td>
+                        <td className="p-3">
+                          {downloadLinks.length > 0 ? (
+                            <div className="space-y-1">
+                              {downloadLinks.slice(0, 2).map((link, idx) => (
+                                <div key={idx} className="text-xs">
+                                  <span className="text-blue-400 font-medium">{link.name}:</span>
+                                  <a 
+                                    href={link.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 ml-1 truncate block max-w-xs"
+                                    title={link.url}
+                                  >
+                                    {link.url.substring(0, 40)}...
+                                  </a>
+                                </div>
+                              ))}
+                              {downloadLinks.length > 2 && (
+                                <div className="text-green-400 text-xs">
+                                  + {downloadLinks.length - 2} more link{downloadLinks.length - 2 > 1 ? 's' : ''}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 text-sm">No download links</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditItem(item)}
+                              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors"
+                              title="Edit"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item._id, isManga ? item.chapterNumber : item.episodeNumber, item.session || 1)}
+                              className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-sm transition-colors"
+                              title="Delete"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
