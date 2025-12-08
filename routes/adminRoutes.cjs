@@ -1,8 +1,8 @@
- // routes/adminRoutes.cjs - COMPLETE FIXED VERSION WITH ALL AD ROUTES
+  // routes/adminRoutes.cjs - COMPLETE FIXED VERSION WITH ALL AD ROUTES
 const express = require('express');
 const router = express.Router();
 const Anime = require('../models/Anime.cjs');
-const Episode = require('../models/Episode.cjs');
+const Episode = require('../models/Episode.cjs'); // ✅ Changed to Episod.cjs
 const Chapter = require('../models/Chapter.cjs');
 const Report = require('../models/Report.cjs');
 const SocialMedia = require('../models/SocialMedia.cjs');
@@ -85,24 +85,150 @@ router.delete('/delete-anime', async (req, res) => {
   }
 });
 
-// ✅ EPISODE MANAGEMENT ROUTES
+// ✅ EPISODE MANAGEMENT ROUTES (UPDATED FOR MULTIPLE DOWNLOAD LINKS)
 
-// Edit episode
+// Edit episode (UPDATED FOR MULTIPLE DOWNLOAD LINKS)
 router.put('/edit-episode/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, cutyLink, secureFileReference, session } = req.body;
+    const { title, downloadLinks, secureFileReference, session } = req.body;
+
+    console.log('📝 Edit episode request:', {
+      id,
+      hasDownloadLinks: !!downloadLinks,
+      downloadLinksCount: downloadLinks ? downloadLinks.length : 0
+    });
+
+    // ✅ Validate downloadLinks if provided
+    if (downloadLinks !== undefined) {
+      if (!Array.isArray(downloadLinks) || downloadLinks.length === 0) {
+        return res.status(400).json({ error: 'At least one download link is required' });
+      }
+
+      if (downloadLinks.length > 5) {
+        return res.status(400).json({ error: 'Maximum 5 download links allowed' });
+      }
+
+      // Validate each download link
+      for (let i = 0; i < downloadLinks.length; i++) {
+        const link = downloadLinks[i];
+        if (!link.name || !link.url) {
+          return res.status(400).json({ 
+            error: `Download link ${i + 1} must have both name and url` 
+          });
+        }
+      }
+    }
+
+    const updateData = {};
+    if (typeof title !== 'undefined') updateData.title = title;
+    if (typeof secureFileReference !== 'undefined') updateData.secureFileReference = secureFileReference;
+    if (typeof session !== 'undefined') updateData.session = session;
+    
+    // ✅ Handle downloadLinks update
+    if (downloadLinks !== undefined) {
+      updateData.downloadLinks = downloadLinks.map((link, index) => ({
+        name: link.name || `Download Link ${index + 1}`,
+        url: link.url,
+        quality: link.quality || '',
+        type: link.type || 'direct'
+      }));
+    }
 
     const episode = await Episode.findByIdAndUpdate(
       id,
-      { title, cutyLink, secureFileReference, session },
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     );
 
     if (!episode) return res.status(404).json({ error: 'Episode not found' });
 
-    res.json({ success: true, message: 'Episode updated!', episode });
+    // ✅ Update anime's lastContentAdded for homepage priority
+    await Anime.updateLastContent(episode.animeId);
+
+    res.json({ 
+      success: true, 
+      message: 'Episode updated successfully!', 
+      episode 
+    });
   } catch (err) {
+    console.error('Edit episode error:', err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ NEW ROUTE: Edit chapter (FOR MULTIPLE DOWNLOAD LINKS)
+router.put('/edit-chapter/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, downloadLinks, secureFileReference, session } = req.body;
+
+    console.log('📝 Edit chapter request:', {
+      id,
+      hasDownloadLinks: !!downloadLinks,
+      downloadLinksCount: downloadLinks ? downloadLinks.length : 0
+    });
+
+    // ✅ Validate downloadLinks if provided
+    if (downloadLinks !== undefined) {
+      if (!Array.isArray(downloadLinks) || downloadLinks.length === 0) {
+        return res.status(400).json({ error: 'At least one download link is required' });
+      }
+
+      if (downloadLinks.length > 5) {
+        return res.status(400).json({ error: 'Maximum 5 download links allowed' });
+      }
+
+      // Validate each download link
+      for (let i = 0; i < downloadLinks.length; i++) {
+        const link = downloadLinks[i];
+        if (!link.name || !link.url) {
+          return res.status(400).json({ 
+            error: `Download link ${i + 1} must have both name and url` 
+          });
+        }
+      }
+    }
+
+    const updateData = {};
+    if (typeof title !== 'undefined') updateData.title = title;
+    if (typeof secureFileReference !== 'undefined') updateData.secureFileReference = secureFileReference;
+    if (typeof session !== 'undefined') updateData.session = session;
+    
+    // ✅ Handle downloadLinks update
+    if (downloadLinks !== undefined) {
+      updateData.downloadLinks = downloadLinks.map((link, index) => ({
+        name: link.name || `Download Link ${index + 1}`,
+        url: link.url,
+        quality: link.quality || '',
+        type: link.type || 'direct'
+      }));
+    }
+
+    const chapter = await Chapter.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!chapter) return res.status(404).json({ error: 'Chapter not found' });
+
+    // ✅ Update manga's lastContentAdded for homepage priority
+    await Anime.updateLastContent(chapter.mangaId);
+
+    res.json({ 
+      success: true, 
+      message: 'Chapter updated successfully!', 
+      chapter 
+    });
+  } catch (err) {
+    console.error('Edit chapter error:', err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(500).json({ error: err.message });
   }
 });
@@ -542,6 +668,64 @@ router.get('/user-info', async (req, res) => {
       email: admin.email
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ NEW ROUTE: Get episode details for editing (including download links)
+router.get('/episode/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const episode = await Episode.findById(id);
+    
+    if (!episode) {
+      return res.status(404).json({ error: 'Episode not found' });
+    }
+    
+    res.json({
+      success: true,
+      episode: {
+        _id: episode._id,
+        animeId: episode.animeId,
+        title: episode.title,
+        episodeNumber: episode.episodeNumber,
+        session: episode.session,
+        secureFileReference: episode.secureFileReference,
+        downloadLinks: episode.downloadLinks || []
+      }
+    });
+  } catch (err) {
+    console.error('Get episode error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ NEW ROUTE: Get chapter details for editing (including download links)
+router.get('/chapter/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const chapter = await Chapter.findById(id);
+    
+    if (!chapter) {
+      return res.status(404).json({ error: 'Chapter not found' });
+    }
+    
+    res.json({
+      success: true,
+      chapter: {
+        _id: chapter._id,
+        mangaId: chapter.mangaId,
+        title: chapter.title,
+        chapterNumber: chapter.chapterNumber,
+        session: chapter.session,
+        secureFileReference: chapter.secureFileReference,
+        downloadLinks: chapter.downloadLinks || []
+      }
+    });
+  } catch (err) {
+    console.error('Get chapter error:', err);
     res.status(500).json({ error: err.message });
   }
 });
