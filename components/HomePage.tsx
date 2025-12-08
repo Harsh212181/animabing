@@ -26,7 +26,7 @@ const HomePage: React.FC<Props> = ({
   const [featuredAnimes, setFeaturedAnimes] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+ 
   // ✅ PAGINATION STATES
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -37,7 +37,7 @@ const HomePage: React.FC<Props> = ({
     try {
       console.log('🔄 Fetching featured animes...');
       const data = await getFeaturedAnime();
-      
+     
       if (data && data.length > 0) {
         const limitedData = data.slice(0, 10);
         setFeaturedAnimes(limitedData);
@@ -76,7 +76,6 @@ const HomePage: React.FC<Props> = ({
     if (contentType !== 'All') {
       return `All ${contentType}`;
     }
- 
     switch (filter) {
       case 'Hindi Dub':
         return 'All Hindi Dub';
@@ -94,18 +93,18 @@ const HomePage: React.FC<Props> = ({
     try {
       setIsLoading(true);
       setError(null);
-   
+  
       const data = await getAnimePaginated(1, 36, ANIME_FIELDS);
-   
+  
       if (!data || data.length === 0) {
         setError('No anime data available');
         return;
       }
-   
+  
       setAnimeList(data);
       setHasMore(data.length === 36);
       setCurrentPage(1);
-   
+  
     } catch (err) {
       console.error('Error loading anime:', err);
       setError('Failed to load anime data. Please try again later.');
@@ -117,12 +116,12 @@ const HomePage: React.FC<Props> = ({
   // ✅ OPTIMIZED: Load more data
   const loadMoreAnime = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
- 
+
     try {
       setIsLoadingMore(true);
       const nextPage = currentPage + 1;
       const data = await getAnimePaginated(nextPage, 24, ANIME_FIELDS);
-   
+  
       if (data.length === 0) {
         setHasMore(false);
       } else {
@@ -143,14 +142,14 @@ const HomePage: React.FC<Props> = ({
       await loadInitialAnime();
       await fetchFeaturedAnimes();
     };
-   
+  
     initializeData();
   }, [loadInitialAnime, fetchFeaturedAnimes]);
 
   // ✅ FIXED: SEARCH
   useEffect(() => {
     let isMounted = true;
-    
+   
     const performSearch = async () => {
       if (searchQuery.trim() === '') {
         if (isMounted) {
@@ -159,7 +158,7 @@ const HomePage: React.FC<Props> = ({
         }
         return;
       }
-      
+     
       try {
         setIsLoading(true);
         const data = await searchAnime(searchQuery, ANIME_FIELDS);
@@ -179,9 +178,8 @@ const HomePage: React.FC<Props> = ({
         }
       }
     };
-    
+   
     const timeoutId = setTimeout(performSearch, 300);
- 
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
@@ -191,16 +189,19 @@ const HomePage: React.FC<Props> = ({
   // ✅ FILTER LOGIC
   const filteredAnime = useMemo(() => {
     let filtered = [...animeList];
+
     if (contentType !== 'All') {
       filtered = filtered.filter(anime =>
         anime.contentType === contentType
       );
     }
+
     if (filter !== 'All') {
       filtered = filtered.filter(anime =>
         anime.subDubStatus === filter
       );
     }
+
     return filtered;
   }, [animeList, filter, contentType]);
 
@@ -228,12 +229,12 @@ const HomePage: React.FC<Props> = ({
     const handleScroll = () => {
       if (window.innerHeight + document.documentElement.scrollTop
           < document.documentElement.offsetHeight - 1000) return;
-   
+  
       if (!isLoadingMore && hasMore && !searchQuery) {
         loadMoreAnime();
       }
     };
-    
+   
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isLoadingMore, hasMore, searchQuery, loadMoreAnime]);
@@ -248,7 +249,7 @@ const HomePage: React.FC<Props> = ({
           </h1>
           <div className="space-y-8">
             <div className="h-64 bg-gray-800 rounded-lg animate-pulse"></div>
-           
+          
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
               {Array.from({ length: 12 }).map((_, index) => (
                 <SkeletonLoader key={index} />
@@ -287,7 +288,7 @@ const HomePage: React.FC<Props> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-4 lg:py-8">
-     
+    
         {/* FEATURED ANIME CAROUSEL */}
         {!searchQuery && featuredAnimes.length > 0 && (
           <div className="mb-6 lg:mb-8">
@@ -300,20 +301,20 @@ const HomePage: React.FC<Props> = ({
             />
           </div>
         )}
-     
-        {/* MOBILE FILTER BUTTONS - EXTRA COMPACT */}
+    
+        {/* MOBILE FILTER BUTTONS - BALANCED SIZE */}
         <div className="mb-3 lg:hidden">
-          <div className="flex flex-nowrap gap-0.5 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide">
             {filterButtons.map((filterBtn) => (
               <button
                 key={filterBtn.key}
                 onClick={() => handleFilterChange(filterBtn.key)}
                 className={`
-                  px-1.5 py-1 rounded text-[10px] font-medium transition-all duration-200
+                  px-2.5 py-1.5 rounded text-[11px] font-medium transition-all duration-200
                   border whitespace-nowrap flex-shrink-0
-                  min-w-[55px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 focus:ring-offset-slate-900
+                  min-w-[62px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 focus:ring-offset-slate-900
                   ${filter === filterBtn.key
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-inner'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-md'
                     : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
                   }
                 `}
@@ -357,7 +358,7 @@ const HomePage: React.FC<Props> = ({
               <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-3 lg:mb-4">
                 {getAllContentHeading()}
               </h2>
-              
+             
               {/* ALL ANIME CARDS IN SINGLE GRID */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
                 {filteredAnime.map((anime, index) => (
@@ -369,7 +370,7 @@ const HomePage: React.FC<Props> = ({
                   />
                 ))}
               </div>
-                  
+                 
               {/* LOAD MORE SECTION */}
               {hasMore && !searchQuery && (
                 <div className="flex justify-center mt-8">
@@ -382,7 +383,7 @@ const HomePage: React.FC<Props> = ({
                   </button>
                 </div>
               )}
-                  
+                 
               {isLoadingMore && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3 mt-4">
                   {Array.from({ length: 6 }).map((_, index) => (
