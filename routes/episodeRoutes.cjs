@@ -1,4 +1,4 @@
-  // routes/episodeRoutes.cjs - VALIDATION COMPLETELY REMOVED
+  // routes/episodeRoutes.cjs - FIXED VERSION
 const express = require('express');
 const router = express.Router();
 const Episode = require('../models/Episode.cjs');
@@ -31,21 +31,40 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/episodes -> ADD NEW EPISODE (NO VALIDATION)
+// POST /api/episodes -> ADD NEW EPISODE (WITH MULTIPLE DOWNLOAD LINKS)
 router.post('/', async (req, res) => {
   try {
-    const { animeId, title, episodeNumber, secureFileReference, cutyLink, session } = req.body;
+    const { animeId, title, episodeNumber, secureFileReference, downloadLinks, session } = req.body;
 
     console.log('📥 ADD EPISODE REQUEST:', {
       animeId,
       title,
       episodeNumber,
       session,
-      cutyLink
+      downloadLinksCount: downloadLinks ? downloadLinks.length : 0
     });
 
     if (!animeId || typeof episodeNumber === 'undefined') {
       return res.status(400).json({ error: 'animeId and episodeNumber required' });
+    }
+
+    // ✅ Validate downloadLinks array
+    if (!downloadLinks || !Array.isArray(downloadLinks) || downloadLinks.length === 0) {
+      return res.status(400).json({ error: 'At least one download link is required' });
+    }
+
+    if (downloadLinks.length > 5) {
+      return res.status(400).json({ error: 'Maximum 5 download links allowed' });
+    }
+
+    // Validate each download link
+    for (let i = 0; i < downloadLinks.length; i++) {
+      const link = downloadLinks[i];
+      if (!link.name || !link.url) {
+        return res.status(400).json({ 
+          error: `Download link ${i + 1} must have both name and url` 
+        });
+      }
     }
 
     // Check if anime exists
@@ -74,7 +93,12 @@ router.post('/', async (req, res) => {
       title: title || `Episode ${episodeNumber}`,
       episodeNumber: Number(episodeNumber),
       secureFileReference: secureFileReference || null,
-      cutyLink: cutyLink || '', // ✅ CUTYLINK KO EMPTY ALLOW KARO
+      downloadLinks: downloadLinks.map((link, index) => ({
+        name: link.name || `Download Link ${index + 1}`,
+        url: link.url,
+        quality: link.quality || '',
+        type: link.type || 'direct'
+      })),
       session: session || 1
     });
 
@@ -94,6 +118,10 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error adding episode:', error);
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -121,10 +149,10 @@ router.get('/:animeId', async (req, res) => {
   }
 });
 
-// PATCH /api/episodes -> UPDATE EPISODE (NO VALIDATION)
+// PATCH /api/episodes -> UPDATE EPISODE (WITH MULTIPLE DOWNLOAD LINKS)
 router.patch('/', async (req, res) => {
   try {
-    const { animeId, episodeNumber, title, secureFileReference, cutyLink, session } = req.body;
+    const { animeId, episodeNumber, title, secureFileReference, downloadLinks, session } = req.body;
     
     if (!animeId || typeof episodeNumber === 'undefined') {
       return res.status(400).json({ error: 'animeId and episodeNumber are required' });
@@ -145,8 +173,35 @@ router.patch('/', async (req, res) => {
     const update = {};
     if (typeof title !== 'undefined') update.title = title;
     if (typeof secureFileReference !== 'undefined') update.secureFileReference = secureFileReference;
-    if (typeof cutyLink !== 'undefined') update.cutyLink = cutyLink; // ✅ NO VALIDATION
     if (typeof session !== 'undefined') update.session = session;
+    
+    // ✅ Handle downloadLinks update if provided
+    if (downloadLinks) {
+      if (!Array.isArray(downloadLinks) || downloadLinks.length === 0) {
+        return res.status(400).json({ error: 'At least one download link is required' });
+      }
+      
+      if (downloadLinks.length > 5) {
+        return res.status(400).json({ error: 'Maximum 5 download links allowed' });
+      }
+      
+      // Validate each download link
+      for (let i = 0; i < downloadLinks.length; i++) {
+        const link = downloadLinks[i];
+        if (!link.name || !link.url) {
+          return res.status(400).json({ 
+            error: `Download link ${i + 1} must have both name and url` 
+          });
+        }
+      }
+      
+      update.downloadLinks = downloadLinks.map((link, index) => ({
+        name: link.name || `Download Link ${index + 1}`,
+        url: link.url,
+        quality: link.quality || '',
+        type: link.type || 'direct'
+      }));
+    }
 
     const updated = await Episode.findOneAndUpdate(query, { $set: update }, { new: true });
     
@@ -161,6 +216,9 @@ router.patch('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating episode:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -194,6 +252,37 @@ router.delete('/', async (req, res) => {
     res.json({ message: 'Episode deleted' });
   } catch (error) {
     console.error('❌ Error deleting episode:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ FIXED ROUTE: Get download links for a specific episode (WITHOUT optional param in middle)
+router.get('/download/:animeId/:episodeNumber', async (req, res) => {
+  try {
+    const { animeId, episodeNumber } = req.params;
+    const { session = 1 } = req.query; // ✅ Session को query parameter से लो
+    
+    console.log('📥 DOWNLOAD REQUEST:', { animeId, episodeNumber, session });
+    
+    const episode = await Episode.findOne({
+      animeId,
+      episodeNumber: Number(episodeNumber),
+      session: Number(session) || 1
+    });
+    
+    if (!episode) {
+      return res.status(404).json({ error: 'Episode not found' });
+    }
+    
+    res.json({
+      animeId: episode.animeId,
+      title: episode.title,
+      episodeNumber: episode.episodeNumber,
+      session: episode.session,
+      downloadLinks: episode.downloadLinks
+    });
+  } catch (error) {
+    console.error('❌ Error fetching download links:', error);
     res.status(500).json({ error: error.message });
   }
 });
