@@ -1,7 +1,8 @@
- // services/animeService.ts - OPTIMIZED VERSION WITH FEATURED ANIME
-import type { Anime } from '../src/types';
+  // services/animeServices.ts - FIXED VERSION
+import type { Anime, Episode, Chapter } from '../src/types';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://animabing.onrender.com/api';
+// ✅ FIX: Local development के लिए PORT 5173 है, server PORT 3000 पर है
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 
 // ✅ CACHE IMPLEMENTATION
 const cache = new Map();
@@ -193,8 +194,15 @@ export const getAllAnime = async (fields?: string): Promise<Anime[]> => {
   return getAnimePaginated(1, 50, fields); // First page with more items
 };
 
-// Keep other functions same (they're already optimized)
-export const getEpisodesByAnimeId = async (animeId: string): Promise<any[]> => {
+// ✅ UPDATED: Get episodes by anime ID (now returns proper Episode type)
+export const getEpisodesByAnimeId = async (animeId: string): Promise<Episode[]> => {
+  const cacheKey = `episodes-${animeId}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
   try {
     const response = await fetch(`${API_BASE}/episodes/${animeId}`);
     
@@ -203,14 +211,40 @@ export const getEpisodesByAnimeId = async (animeId: string): Promise<any[]> => {
     }
     
     const episodes = await response.json();
-    return episodes;
+    
+    // ✅ Transform the data to match Episode type with downloadLinks
+    const transformedEpisodes: Episode[] = episodes.map((episode: any) => ({
+      episodeId: episode._id,
+      _id: episode._id,
+      episodeNumber: episode.episodeNumber,
+      title: episode.title || `Episode ${episode.episodeNumber}`,
+      downloadLinks: episode.downloadLinks || [], // ✅ Use downloadLinks instead of cutyLink
+      secureFileReference: episode.secureFileReference || '',
+      session: episode.session || 1
+    }));
+    
+    // Store in cache
+    cache.set(cacheKey, {
+      data: transformedEpisodes,
+      timestamp: Date.now()
+    });
+    
+    return transformedEpisodes;
   } catch (error) {
     console.error('❌ Error fetching episodes:', error);
     return [];
   }
 };
 
-export const getChaptersByMangaId = async (mangaId: string): Promise<any[]> => {
+// ✅ UPDATED: Get chapters by manga ID (now returns proper Chapter type)
+export const getChaptersByMangaId = async (mangaId: string): Promise<Chapter[]> => {
+  const cacheKey = `chapters-${mangaId}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
   try {
     const response = await fetch(`${API_BASE}/chapters/${mangaId}`);
     
@@ -219,15 +253,164 @@ export const getChaptersByMangaId = async (mangaId: string): Promise<any[]> => {
     }
     
     const chapters = await response.json();
-    return chapters;
+    
+    // ✅ Transform the data to match Chapter type with downloadLinks
+    const transformedChapters: Chapter[] = chapters.map((chapter: any) => ({
+      chapterId: chapter._id,
+      _id: chapter._id,
+      chapterNumber: chapter.chapterNumber,
+      title: chapter.title || `Chapter ${chapter.chapterNumber}`,
+      downloadLinks: chapter.downloadLinks || [], // ✅ Use downloadLinks instead of cutyLink
+      secureFileReference: chapter.secureFileReference || '',
+      session: chapter.session || 1
+    }));
+    
+    // Store in cache
+    cache.set(cacheKey, {
+      data: transformedChapters,
+      timestamp: Date.now()
+    });
+    
+    return transformedChapters;
   } catch (error) {
     console.error('❌ Error fetching chapters:', error);
     return [];
   }
 };
 
-// Clear cache function
+// ✅ FIXED: Get download links for a specific episode (using query parameter)
+export const getEpisodeDownloadLinks = async (animeId: string, episodeNumber: number, session?: number): Promise<Episode | null> => {
+  const cacheKey = `episode-links-${animeId}-${episodeNumber}-${session || 1}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  try {
+    // ✅ FIXED: Use query parameter for session instead of path parameter
+    let url = `${API_BASE}/episodes/download/${animeId}/${episodeNumber}`;
+    if (session && session !== 1) {
+      url += `?session=${session}`;
+    }
+    
+    console.log('📥 Fetching episode download links from:', url);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result) {
+      const episodeData: Episode = {
+        episodeId: result._id,
+        _id: result._id,
+        episodeNumber: result.episodeNumber,
+        title: result.title || `Episode ${result.episodeNumber}`,
+        downloadLinks: result.downloadLinks || [],
+        secureFileReference: result.secureFileReference || '',
+        session: result.session || 1
+      };
+      
+      // Store in cache
+      cache.set(cacheKey, {
+        data: episodeData,
+        timestamp: Date.now()
+      });
+      
+      return episodeData;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching episode download links:', error);
+    return null;
+  }
+};
+
+// ✅ FIXED: Get download links for a specific chapter (using query parameter)
+export const getChapterDownloadLinks = async (mangaId: string, chapterNumber: number, session?: number): Promise<Chapter | null> => {
+  const cacheKey = `chapter-links-${mangaId}-${chapterNumber}-${session || 1}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  try {
+    // ✅ FIXED: Use query parameter for session instead of path parameter
+    let url = `${API_BASE}/chapters/download/${mangaId}/${chapterNumber}`;
+    if (session && session !== 1) {
+      url += `?session=${session}`;
+    }
+    
+    console.log('📥 Fetching chapter download links from:', url);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result) {
+      const chapterData: Chapter = {
+        chapterId: result._id,
+        _id: result._id,
+        chapterNumber: result.chapterNumber,
+        title: result.title || `Chapter ${result.chapterNumber}`,
+        downloadLinks: result.downloadLinks || [],
+        secureFileReference: result.secureFileReference || '',
+        session: result.session || 1
+      };
+      
+      // Store in cache
+      cache.set(cacheKey, {
+        data: chapterData,
+        timestamp: Date.now()
+      });
+      
+      return chapterData;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching chapter download links:', error);
+    return null;
+  }
+};
+
+// ✅ Clear cache function
 export const clearAnimeCache = () => {
   cache.clear();
   console.log('🗑️ Anime cache cleared');
+};
+
+// ✅ Clear specific cache entries
+export const clearEpisodeCache = (animeId: string) => {
+  const keysToDelete: string[] = [];
+  
+  cache.forEach((value, key) => {
+    if (key.includes(`episodes-${animeId}`) || key.includes(`episode-links-${animeId}`)) {
+      keysToDelete.push(key);
+    }
+  });
+  
+  keysToDelete.forEach(key => cache.delete(key));
+  console.log(`🗑️ Cleared ${keysToDelete.length} episode cache entries for anime ${animeId}`);
+};
+
+export const clearChapterCache = (mangaId: string) => {
+  const keysToDelete: string[] = [];
+  
+  cache.forEach((value, key) => {
+    if (key.includes(`chapters-${mangaId}`) || key.includes(`chapter-links-${mangaId}`)) {
+      keysToDelete.push(key);
+    }
+  });
+  
+  keysToDelete.forEach(key => cache.delete(key));
+  console.log(`🗑️ Cleared ${keysToDelete.length} chapter cache entries for manga ${mangaId}`);
 };
