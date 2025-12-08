@@ -1,4 +1,4 @@
-  // components/AnimeCard.tsx - UPDATED VERSION
+  // components/AnimeCard.tsx - UPDATED VERSION WITH STATUS BADGE
 import React from 'react';
 import type { Anime } from '../src/types';
 import { PlayIcon } from './icons/PlayIcon';
@@ -7,9 +7,10 @@ interface AnimeCardProps {
   anime: Anime;
   onClick: (anime: Anime) => void;
   index: number;
+  showStatus?: boolean;
 }
 
-const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index }) => {
+const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus = false }) => {
   return (
     <div
       className="anime-card group relative overflow-hidden rounded-lg shadow-lg cursor-pointer transition-all duration-300 card-load-animate opacity-0 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-800/40 aspect-[2/3] w-full"
@@ -25,6 +26,15 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index }) => {
           loading="lazy"
         />
         
+        {/* Status Badge - Top Left (Anime/Movie/Manga) */}
+        {showStatus && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="bg-purple-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
+              {anime.contentType || 'Anime'}
+            </span>
+          </div>
+        )}
+        
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-colors duration-300 group-hover:from-black/95 flex flex-col justify-end p-2 sm:p-3 md:p-4">
           
@@ -35,7 +45,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index }) => {
               {anime.title}
             </h3>
             
-            {/* Year and Status in one line */}
+            {/* Year and SubDub Status in one line */}
             <div className="flex justify-between items-center">
               <p className="text-slate-300 text-xs sm:text-sm">{anime.releaseYear}</p>
               <span className="bg-purple-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
