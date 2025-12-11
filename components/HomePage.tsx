@@ -1,5 +1,4 @@
-  // components/HomePage.tsx - FILTER WORKING PERFECTLY
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+  import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
 import { SkeletonLoader } from './SkeletonLoader';
@@ -9,19 +8,20 @@ import FeaturedAnimeCarousel from '../src/components/FeaturedAnimeCarousel';
 interface Props {
   onAnimeSelect: (anime: Anime) => void;
   searchQuery: string;
+  filter: FilterType;               // ← FIX ADDED
   contentType: ContentTypeFilter;
 }
 
-const ANIME_FIELDS = 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList';
+const ANIME_FIELDS =
+  'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList';
 
 const HomePage: React.FC<Props> = ({
   onAnimeSelect,
   searchQuery,
+  filter,
   contentType
 }) => {
-  // Local filter state
-  const [localFilter, setLocalFilter] = useState<FilterType>('All');
-  
+  const [localFilter, setLocalFilter] = useState<FilterType>(filter || 'All');  // ← FIX
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [featuredAnimes, setFeaturedAnimes] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,11 +30,11 @@ const HomePage: React.FC<Props> = ({
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Fetch featured animes
+  // Load Featured
   const fetchFeaturedAnimes = useCallback(async () => {
     try {
       const data = await getFeaturedAnime();
-      if (data && data.length > 0) {
+      if (data?.length) {
         const limited = data.slice(0, 10);
         setFeaturedAnimes(limited);
         localStorage.setItem('featuredAnimes', JSON.stringify(limited));
@@ -50,7 +50,7 @@ const HomePage: React.FC<Props> = ({
     }
   }, []);
 
-  // Dynamic heading
+  // Heading
   const getAllContentHeading = useCallback(() => {
     if (contentType !== 'All') return `All ${contentType}`;
     switch (localFilter) {
@@ -61,12 +61,14 @@ const HomePage: React.FC<Props> = ({
     }
   }, [localFilter, contentType]);
 
-  // Load initial anime
+  // Initial load
   const loadInitialAnime = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+
       const data = await getAnimePaginated(1, 36, ANIME_FIELDS);
+
       if (data?.length) {
         setAnimeList(data);
         setHasMore(data.length === 36);
@@ -81,13 +83,15 @@ const HomePage: React.FC<Props> = ({
     }
   }, []);
 
-  // Load more
+  // Load More
   const loadMoreAnime = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
+
     setIsLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
       const data = await getAnimePaginated(nextPage, 24, ANIME_FIELDS);
+
       if (data?.length) {
         setAnimeList(prev => [...prev, ...data]);
         setCurrentPage(nextPage);
@@ -101,16 +105,16 @@ const HomePage: React.FC<Props> = ({
     }
   }, [currentPage, hasMore, isLoadingMore]);
 
-  // Initial load
+  // On mount
   useEffect(() => {
     loadInitialAnime();
     fetchFeaturedAnimes();
   }, []);
 
-  // Search effect
+  // Search
   useEffect(() => {
     if (!searchQuery.trim()) return;
-    
+
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
@@ -124,24 +128,24 @@ const HomePage: React.FC<Props> = ({
         setIsLoading(false);
       }
     }, 300);
+
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Filter logic
+  // Filtering
   const filteredAnime = useMemo(() => {
     let list = [...animeList];
-    
+
     if (contentType !== 'All') {
       list = list.filter(a => a.contentType === contentType);
     }
     if (localFilter !== 'All') {
       list = list.filter(a => a.subDubStatus === localFilter);
     }
-    
+
     return list;
   }, [animeList, localFilter, contentType]);
 
-  // Filter buttons
   const filterButtons = [
     { key: 'All' as FilterType, label: 'All' },
     { key: 'Hindi Dub' as FilterType, label: 'Hindi Dub' },
@@ -149,39 +153,45 @@ const HomePage: React.FC<Props> = ({
     { key: 'English Sub' as FilterType, label: 'English Sub' }
   ];
 
-  // Filter change
-  const handleFilterChange = (newFilter: FilterType) => {
-    setLocalFilter(newFilter);
-  };
+  const handleFilterChange = (f: FilterType) => setLocalFilter(f);
 
-  // Infinite scroll
+  // Infinite Scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000) {
-        if (!isLoadingMore && hasMore && !searchQuery) loadMoreAnime();
+      const trigger = window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000;
+
+      if (trigger && !isLoadingMore && hasMore && !searchQuery) {
+        loadMoreAnime();
       }
     };
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isLoadingMore, hasMore, searchQuery, loadMoreAnime]);
 
-  // Loading state
+  // Full Loader
   if (isLoading && animeList.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {Array.from({ length: 18 }).map((_, i) => <SkeletonLoader key={i} />)}
+          {Array.from({ length: 18 }).map((_, i) => (
+            <SkeletonLoader key={i} />
+          ))}
         </div>
       </div>
     );
   }
 
+  // Error
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
         <div className="text-center bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700">
           <p className="text-red-400 text-xl mb-4">{error}</p>
-          <button onClick={() => window.location.reload()} className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold">
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold"
+          >
             Try Again
           </button>
         </div>
@@ -193,30 +203,33 @@ const HomePage: React.FC<Props> = ({
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-4 lg:py-8">
 
-        {/* Featured Carousel */}
+        {/* Featured */}
         {!searchQuery && featuredAnimes.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
               Latest Content
             </h2>
-            <FeaturedAnimeCarousel featuredAnimes={featuredAnimes} onAnimeSelect={onAnimeSelect} />
+            <FeaturedAnimeCarousel
+              featuredAnimes={featuredAnimes}
+              onAnimeSelect={onAnimeSelect}
+            />
           </div>
         )}
 
-        {/* MOBILE FILTER BUTTONS */}
+        {/* Mobile Filter */}
         <div className="mb-3 lg:hidden">
           <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide">
-            {filterButtons.map((btn) => (
+            {filterButtons.map(btn => (
               <button
                 key={btn.key}
                 onClick={() => handleFilterChange(btn.key)}
                 className={`
                   px-2.5 py-1.5 rounded text-[11px] font-medium transition-all duration-200
-                  border whitespace-nowrap flex-shrink-0
-                  min-w-[62px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 focus:ring-offset-slate-900
-                  ${localFilter === btn.key
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-md'
-                    : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
+                  border whitespace-nowrap flex-shrink-0 min-w-[62px]
+                  ${
+                    localFilter === btn.key
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-md'
+                      : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
                   }
                 `}
               >
@@ -226,7 +239,7 @@ const HomePage: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Result */}
         {filteredAnime.length === 0 ? (
           <div className="text-center py-20">
             <div className="bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-md mx-auto border border-slate-700">
@@ -234,6 +247,7 @@ const HomePage: React.FC<Props> = ({
               <h2 className="text-2xl font-bold text-white mb-3">
                 {searchQuery ? 'No Results Found' : 'No Content'}
               </h2>
+
               {localFilter !== 'All' && (
                 <button
                   onClick={() => handleFilterChange('All')}
@@ -250,6 +264,7 @@ const HomePage: React.FC<Props> = ({
               {getAllContentHeading()}
             </h2>
 
+            {/* Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {filteredAnime.map((anime, i) => (
                 <AnimeCard
@@ -277,7 +292,9 @@ const HomePage: React.FC<Props> = ({
 
             {isLoadingMore && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-6">
-                {Array.from({ length: 12 }).map((_, i) => <SkeletonLoader key={i} />)}
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <SkeletonLoader key={i} />
+                ))}
               </div>
             )}
           </>
