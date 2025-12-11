@@ -1,131 +1,76 @@
-  // App.tsx - UPDATED WITH BOTH DOWNLOAD ROUTES
-// ⭐⭐⭐ SABSE PEHLE YE 4 LINES ADD KAREIN ⭐⭐⭐
+  // ---------------------------------------------------------
+// 🚀 GLOBAL: Disable console in production
+// ---------------------------------------------------------
 if (import.meta.env.PROD) {
-  // Saare console methods completely disable karein
-  console.log = console.info = console.debug = console.warn = 
-  console.error = console.trace = console.table = console.dir = 
-  console.group = console.groupEnd = console.groupCollapsed = 
-  console.time = console.timeEnd = () => {};
+  const noop = () => {};
+  console.log = console.info = console.warn =
+  console.error = console.debug = console.trace =
+  console.table = console.group = console.groupEnd =
+  console.groupCollapsed = console.time = console.timeEnd = noop;
 }
 
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
-import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import HomePage from './components/HomePage';
-import AnimeListPage from './components/AnimeListPage';
-import AnimeDetailPage from './components/AnimeDetailPage';
-import DownloadRedirectPage from './components/DownloadRedirectPage'; // ✅ ADDED
-import ScrollToTopButton from './components/ScrollToTopButton';
-import Spinner from './components/Spinner';
-import AdminLogin from './src/components/admin/AdminLogin';
-import AdminDashboard from './src/components/admin/AdminDashboard';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import DMCA from './components/DMCA';
-import TermsAndConditions from './components/TermsAndConditions';
-import Contact from './components/Contact';
-import { getAllAnime } from './services/animeService';
+// ---------------------------------------------------------
+// Imports
+// ---------------------------------------------------------
+import React, { useState, useEffect, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 
-type ViewType = 'home' | 'list' | 'detail';
-type AdminViewType = 'login' | 'dashboard';
+import Spinner from "./src/components/Spinner";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
+import type { Anime, FilterType, ContentType, ContentTypeFilter } from "./src/types";
+import { getAllAnime } from "./services/animeService";
+
+// ---------------------------------------------------------
+// ⚡ LAZY LOADING — Major Performance Boost
+// ---------------------------------------------------------
+const Header = React.lazy(() => import("./components/Header"));
+const Footer = React.lazy(() => import("./components/Footer"));
+const HomePage = React.lazy(() => import("./components/HomePage"));
+const AnimeListPage = React.lazy(() => import("./components/AnimeListPage"));
+const AnimeDetailPage = React.lazy(() => import("./components/AnimeDetailPage"));
+const DownloadRedirectPage = React.lazy(() => import("./components/DownloadRedirectPage"));
+const ScrollToTopButton = React.lazy(() => import("./components/ScrollToTopButton"));
+
+const AdminLogin = React.lazy(() => import("./src/components/admin/AdminLogin"));
+const AdminDashboard = React.lazy(() => import("./src/components/admin/AdminDashboard"));
+
+const PrivacyPolicy = React.lazy(() => import("./components/PrivacyPolicy"));
+const DMCA = React.lazy(() => import("./components/DMCA"));
+const TermsAndConditions = React.lazy(() => import("./components/TermsAndConditions"));
+const Contact = React.lazy(() => import("./components/Contact"));
+
+// ---------------------------------------------------------
+// DETAIL WRAPPER — optimized
+// ---------------------------------------------------------
 const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { animeId } = useParams<{ animeId: string }>();
+  const { animeId } = useParams();
   const [anime, setAnime] = useState<Anime | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAnimeData = async () => {
-      if (!animeId) {
-        setError('No anime ID provided');
-        setIsLoading(false);
-        return;
-      }
+    if (!animeId) return;
+
+    (async () => {
+      setLoading(true);
 
       try {
-        // Production mein log show nahi hoga
-        if (import.meta.env.DEV) {
-          console.log('🔍 Fetching anime data for ID:', animeId);
-        }
-        
-        setIsLoading(true);
-        setError(null);
-        
-        const allAnime = await getAllAnime();
-        
-        if (import.meta.env.DEV) {
-          console.log('📚 All anime loaded:', allAnime.length);
-        }
-        
-        const foundAnime = allAnime.find(a => a.id === animeId || a._id === animeId);
-        
-        if (import.meta.env.DEV) {
-          console.log('🎯 Found anime:', foundAnime);
-        }
-        
-        if (foundAnime) {
-          setAnime(foundAnime);
-        } else {
-          setError('Anime not found');
-        }
-      } catch (err) {
-        // Error sirf development mein show hoga
-        if (import.meta.env.DEV) {
-          console.error('❌ Error fetching anime:', err);
-        }
-        setError('Failed to load anime data');
+        const all = await getAllAnime();
+        const found = all.find(a => a.id === animeId || a._id === animeId);
+        setAnime(found || null);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    };
-
-    fetchAnimeData();
+    })();
   }, [animeId]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-96">
-        <Spinner size="lg" text="Loading anime..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-16">
-        <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
-          <div className="text-6xl mb-4">😕</div>
-          <h2 className="text-2xl font-semibold text-slate-300 mb-2">Error Loading Anime</h2>
-          <p className="text-slate-400 mb-4">{error}</p>
-          <button
-            onClick={onBack}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Spinner size="lg" text="Loading anime..." />;
 
   if (!anime) {
     return (
       <div className="text-center py-16">
-        <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
-          <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-2xl font-semibold text-slate-300 mb-2">Anime Not Found</h2>
-          <p className="text-slate-400 mb-4">
-            The anime you're looking for doesn't exist or has been removed.
-          </p>
-          <button
-            onClick={onBack}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition"
-          >
-            Go Back
-          </button>
-        </div>
+        <h2 className="text-2xl mb-2">Anime Not Found</h2>
+        <button onClick={onBack} className="bg-purple-600 px-4 py-2 rounded">Go Back</button>
       </div>
     );
   }
@@ -133,280 +78,176 @@ const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return <AnimeDetailPage anime={anime} onBack={onBack} />;
 };
 
+// ---------------------------------------------------------
+// MAIN APP
+// ---------------------------------------------------------
 const MainApp: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
-  
-  const [adminView, setAdminView] = useState<AdminViewType | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<FilterType>('All');
-  const [contentType, setContentType] = useState<ContentTypeFilter>('All');
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [isAppLoading, setIsAppLoading] = useState(true);
-  const [showAdminButton, setShowAdminButton] = useState(false);
+  const [params] = useSearchParams();
 
+  const [searchQuery, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>("All");
+  const [contentType, setContentType] = useState<ContentTypeFilter>("All");
+
+  const [adminMode, setAdminMode] = useState<"login" | "dashboard" | null>(null);
+  const [adminAuth, setAdminAuth] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [adminButton, setAdminButton] = useState(false);
+
+  // ---------------------------------------------------------
+  // URL Sync → optimized
+  // ---------------------------------------------------------
   useEffect(() => {
-    // Sirf development mode mein logs show karein
-    if (import.meta.env.DEV) {
-      console.log('📍 URL Changed:', location.search);
-      
-      const urlContentType = searchParams.get('contentType') as ContentTypeFilter | null;
-      const urlFilter = searchParams.get('filter') as FilterType | null;
-      const urlSearchQuery = searchParams.get('search') || '';
+    setSearch(params.get("search") || "");
+    setFilter((params.get("filter") as FilterType) || "All");
+    setContentType((params.get("contentType") as ContentTypeFilter) || "All");
+  }, [location.search]);
 
-      console.log('📋 URL Parameters:', {
-        contentType: urlContentType,
-        filter: urlFilter,
-        searchQuery: urlSearchQuery
-      });
-
-      if (urlContentType && urlContentType !== contentType) {
-        console.log('🔄 Updating contentType from URL:', urlContentType);
-      }
-
-      if (urlFilter && urlFilter !== filter) {
-        console.log('🔄 Updating filter from URL:', urlFilter);
-      }
-
-      if (urlSearchQuery && urlSearchQuery !== searchQuery) {
-        console.log('🔄 Updating searchQuery from URL:', urlSearchQuery);
-      }
-    }
-  }, [location.search, searchParams]);
-
+  // ---------------------------------------------------------
+  // Admin Token
+  // ---------------------------------------------------------
   useEffect(() => {
-    const currentParams = new URLSearchParams(location.search);
-    
-    if (contentType !== 'All') {
-      currentParams.set('contentType', contentType);
-    } else {
-      currentParams.delete('contentType');
-    }
-    
-    if (filter !== 'All') {
-      currentParams.set('filter', filter);
-    } else {
-      currentParams.delete('filter');
-    }
-    
-    if (searchQuery) {
-      currentParams.set('search', searchQuery);
-    } else {
-      currentParams.delete('search');
-    }
+    const token = localStorage.getItem("adminToken");
+    const user = localStorage.getItem("adminUsername");
+    if (token && user) setAdminAuth(true);
 
-    const newSearch = currentParams.toString();
-    const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
-    
-    if (import.meta.env.DEV) {
-      if (newUrl !== location.pathname + location.search) {
-        console.log('🔗 Updating URL:', newUrl);
-      }
-    }
-    
-    if (newUrl !== location.pathname + location.search) {
-      navigate(newUrl, { replace: true });
-    }
-  }, [contentType, filter, searchQuery, navigate, location]);
-
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-       
-        const token = localStorage.getItem('adminToken');
-        const username = localStorage.getItem('adminUsername');
-        if (token && username) {
-          setIsAdminAuthenticated(true);
-        }
-      } catch (error) {
-        // Sirf development mein error show karein
-        if (import.meta.env.DEV) {
-          console.error('App initialization error:', error);
-        }
-      } finally {
-        setIsAppLoading(false);
-      }
-    };
-    initializeApp();
+    setTimeout(() => setLoading(false), 1200);
   }, []);
 
+  // ---------------------------------------------------------
+  // Secret Admin Button (Ctrl + Shift + Alt)
+  // ---------------------------------------------------------
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.altKey) {
-        e.preventDefault();
-        setShowAdminButton(prev => !prev);
-      }
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.altKey) setAdminButton(p => !p);
     };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // ---------------------------------------------------------
+  // Functions
+  // ---------------------------------------------------------
+  const updateURL = (key: string, value: string | null) => {
+    const sp = new URLSearchParams(location.search);
+    if (!value || value === "All") sp.delete(key);
+    else sp.set(key, value);
+    navigate(`/?${sp.toString()}`, { replace: true });
+  };
 
   const handleAdminLogin = (token: string, username: string) => {
-    localStorage.setItem('adminToken', token);
-    localStorage.setItem('adminUsername', username);
-    setIsAdminAuthenticated(true);
-    setAdminView('dashboard');
-    setShowAdminButton(false);
+    localStorage.setItem("adminToken", token);
+    localStorage.setItem("adminUsername", username);
+    setAdminAuth(true);
+    setAdminMode("dashboard");
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUsername');
-    setIsAdminAuthenticated(false);
-    setAdminView(null);
-    navigate('/');
-    setShowAdminButton(false);
+    localStorage.clear();
+    setAdminAuth(false);
+    setAdminMode(null);
+    navigate("/");
   };
 
-  const handleAnimeSelect = (anime: Anime) => {
+  const selectAnime = (anime: Anime) => {
     navigate(`/detail/${anime.id}`);
     window.scrollTo(0, 0);
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    navigate('/');
-  };
-  
-  const handleFilterChange = (newFilter: FilterType) => {
-    setFilter(newFilter);
-  }
-
-  const handleNavigate = (destination: 'home' | 'list') => {
-    if (destination === 'list') {
-      navigate('/anime');
-    } else {
-      navigate('/');
-    }
-    if (destination === 'home') {
-      setFilter('All');
-      setContentType('All');
-      setSearchQuery('');
-    }
-  };
-
-  // ✅ UPDATED: Added 'English Sub' parameter type
-  const handleFilterAndNavigateHome = (newFilter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => {
-    navigate(`/?filter=${encodeURIComponent(newFilter)}`);
-    setFilter(newFilter);
-    setContentType('All');
-    setSearchQuery('');
-  };
-
-  const handleContentTypeNavigate = (newContentType: ContentType) => {
-    navigate(`/?contentType=${encodeURIComponent(newContentType)}`);
-    setContentType(newContentType);
-    setFilter('All');
-    setSearchQuery('');
-  };
-
-  if (isAppLoading) {
+  if (loading)
     return (
-      <div className="min-h-screen bg-[#0a0c1c] flex flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <div className="relative mb-8">
-            <div className="text-6xl mb-4 animate-bounce">🎬</div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Anim<span className="text-purple-500">abing</span>
-            </h1>
-            <p className="text-slate-400">Your ultimate anime destination</p>
-          </div>
-          <Spinner size="lg" text="Loading your anime world..." />
-          <div className="mt-8 bg-slate-800/50 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-slate-400 text-sm">
-              • Fast Downloads<br/>
-              • Hindi Dubbed & Subbed<br/>
-              • English Subbed<br/>
-              • High Quality Content
-            </p>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0c1c]">
+        <Spinner size="lg" text="Loading your anime world..." />
       </div>
     );
-  }
 
-  if (adminView === 'login') {
-    return <AdminLogin onLogin={handleAdminLogin} />;
-  }
-
-  if (adminView === 'dashboard' && isAdminAuthenticated) {
+  if (adminMode === "login") return <AdminLogin onLogin={handleAdminLogin} />;
+  if (adminMode === "dashboard" && adminAuth)
     return <AdminDashboard onLogout={handleAdminLogout} />;
-  }
 
+  // ---------------------------------------------------------
+  // USER APP UI
+  // ---------------------------------------------------------
   return (
-    <div className="bg-[#0a0c1c] text-white min-h-screen font-sans">
-      <Header 
-        onSearchChange={handleSearchChange} 
+    <div className="bg-[#0a0c1c] text-white min-h-screen">
+      <Header
         searchQuery={searchQuery}
-        onNavigate={handleNavigate}
-        onFilterAndNavigateHome={handleFilterAndNavigateHome}
-        onContentTypeNavigate={handleContentTypeNavigate}
+        onSearchChange={(q) => {
+          setSearch(q);
+          updateURL("search", q);
+        }}
+        onNavigate={(loc) => navigate(loc === "home" ? "/" : "/anime")}
+        onFilterAndNavigateHome={(f) => {
+          setFilter(f);
+          updateURL("filter", f);
+        }}
+        onContentTypeNavigate={(ct) => {
+          setContentType(ct);
+          updateURL("contentType", ct);
+        }}
       />
+
       <main className="container mx-auto px-4 py-8">
         <Routes>
-          <Route path="/" element={
-            <HomePage 
-              onAnimeSelect={handleAnimeSelect} 
-              searchQuery={searchQuery} 
-              filter={filter}
-              contentType={contentType}
-            />
-          } />
-          
-          {/* ✅ Anime List Route */}
-          <Route path="/anime" element={
-            <AnimeListPage 
-              onAnimeSelect={handleAnimeSelect}
-            />
-          } />
-          
-          <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={handleBack} />} />
-          
-          {/* ✅ FIXED: Both Download Routes Added */}
+          <Route
+            path="/"
+            element={
+              <HomePage
+                searchQuery={searchQuery}
+                filter={filter}
+                contentType={contentType}
+                onAnimeSelect={selectAnime}
+              />
+            }
+          />
+
+          <Route
+            path="/anime"
+            element={<AnimeListPage onAnimeSelect={selectAnime} />}
+          />
+
+          <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={() => navigate(-1)} />} />
+
           <Route path="/download" element={<DownloadRedirectPage />} />
           <Route path="/download-redirect" element={<DownloadRedirectPage />} />
-          
+
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>
-      
+
       <Footer />
       <ScrollToTopButton />
-      
-      {showAdminButton && (
-        <div className="fixed bottom-4 left-4 z-50 animate-fade-in">
+
+      {adminButton && (
+        <div className="fixed bottom-4 left-4">
           <button
-            onClick={() => setAdminView('login')}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
+            onClick={() => setAdminMode("login")}
+            className="bg-purple-600 px-4 py-2 rounded"
           >
-            <span>⚙️</span>
             Admin Access
           </button>
-          <p className="text-xs text-slate-400 mt-1 bg-black/50 p-1 rounded">
-            Press Ctrl+Shift+Alt to hide
-          </p>
         </div>
       )}
     </div>
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <Router>
-      <MainApp />
-    </Router>
-  );
-};
+// ---------------------------------------------------------
+// EXPORT ROOT
+// ---------------------------------------------------------
+const App = () => (
+  <Router>
+    <ErrorBoundary>
+      <Suspense fallback={<Spinner size="lg" text="Loading..." />}>
+        <MainApp />
+      </Suspense>
+    </ErrorBoundary>
+  </Router>
+);
 
 export default App;
