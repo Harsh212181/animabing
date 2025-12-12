@@ -1,4 +1,4 @@
-  // index.tsx — Optimized for Best Performance
+ // index.tsx — Optimized for Best Performance
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
