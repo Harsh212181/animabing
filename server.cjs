@@ -1,4 +1,4 @@
-   // server.cjs - COMPLETE FIXED VERSION WITH ACTIVE AD SLOTS ROUTE
+ // server.cjs - COMPLETE FIXED VERSION WITH ADMIN LOGIN FIX
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db.cjs');
@@ -21,7 +21,39 @@ const contactRoutes = require('./routes/contactRoutes.cjs');
 
 const app = express();
 
-app.use(cors());
+// ✅ CORS CONFIGURATION FIXED FOR CLOUDFLARE PAGES
+const allowedOrigins = [
+  'https://animabing.pages.dev',
+  'https://animabing.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // Allow any origin in development, restrict in production
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        console.log('❌ CORS Blocked Origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// ✅ PREFLIGHT REQUESTS HANDLE करें
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -53,7 +85,7 @@ const createAdmin = async () => {
     const username = process.env.ADMIN_USER || 'Hellobrother';
     const password = process.env.ADMIN_PASS || 'Anime2121818144';
     
-    console.log('🔄 Checking admin user...');
+    console.log('\n🔄 Checking admin user...');
     
     let admin = await Admin.findOne({ username });
     
@@ -83,9 +115,10 @@ const createAdmin = async () => {
     console.log('🔑 ADMIN LOGIN CREDENTIALS:');
     console.log('   Username:', username);
     console.log('   Password:', password);
-    console.log('   Login URL: http://localhost:5173');
-    console.log('   Press Ctrl+Shift+Alt for admin button');
-    console.log('=================================');
+    console.log('   Frontend URL: https://animabing.pages.dev');
+    console.log('   Admin Login: https://animabing.pages.dev/admin/login');
+    console.log('   API Base: https://animabing.onrender.com/api');
+    console.log('=================================\n');
     
   } catch (err) {
     console.error('❌ ADMIN CREATION ERROR:', err);
@@ -214,19 +247,22 @@ app.get('/api/admin/create-default-admin', async (req, res) => {
   }
 });
 
-// ✅ FIXED ADMIN LOGIN ROUTE
+// ✅ FIXED ADMIN LOGIN ROUTE WITH BETTER ERROR HANDLING
 app.post('/api/admin/login', async (req, res) => {
   try {
+    console.log('\n🔐 ========== LOGIN ATTEMPT ==========');
+    console.log('Time:', new Date().toISOString());
+    console.log('Client IP:', req.ip);
+    console.log('User Agent:', req.headers['user-agent']);
+    
     const { username, password } = req.body;
     
-    console.log('\n🔐 LOGIN ATTEMPT:', { 
-      username, 
-      hasPassword: !!password,
-      timestamp: new Date().toISOString()
-    });
+    // Log request details (without password for security)
+    console.log('Login attempt for username:', username);
     
     // Input validation
     if (!username || !password) {
+      console.log('❌ Missing username or password');
       return res.status(400).json({ 
         success: false,
         error: 'Username and password required' 
@@ -237,22 +273,25 @@ app.post('/api/admin/login', async (req, res) => {
     const bcrypt = require('bcryptjs');
     
     // Find admin
+    console.log('🔍 Looking for admin in database...');
     const admin = await Admin.findOne({ username });
     if (!admin) {
-      console.log('❌ Admin not found:', username);
+      console.log('❌ Admin not found in database:', username);
       return res.status(401).json({ 
         success: false,
         error: 'Invalid username or password' 
       });
     }
 
-    console.log('🔑 Admin found, comparing passwords...');
+    console.log('✅ Admin found:', admin.username);
+    console.log('🔑 Comparing passwords...');
     
     // Compare passwords
     const isMatch = await bcrypt.compare(password, admin.password);
-    console.log('✅ Password match:', isMatch);
+    console.log('Password match result:', isMatch);
     
     if (!isMatch) {
+      console.log('❌ Password does not match');
       return res.status(401).json({ 
         success: false,
         error: 'Invalid username or password' 
@@ -268,24 +307,75 @@ app.post('/api/admin/login', async (req, res) => {
         role: admin.role 
       }, 
       process.env.JWT_SECRET || 'supersecretkey', 
-      { expiresIn: '24h' }
+      { expiresIn: '7d' } // 7 days expiry
     );
 
-    console.log('🎉 LOGIN SUCCESSFUL for:', username);
+    console.log('🎉 LOGIN SUCCESSFUL!');
+    console.log('Generated token for user:', admin.username);
+    console.log('Token expiry: 7 days');
+    console.log('=================================\n');
     
     res.json({ 
       success: true, 
       message: 'Login successful', 
       token, 
       username: admin.username,
-      role: admin.role
+      role: admin.role,
+      expiresIn: '7d'
     });
     
   } catch (err) {
     console.error('❌ Login error:', err);
+    console.error('Error stack:', err.stack);
+    
     res.status(500).json({ 
       success: false,
-      error: 'Server error during login' 
+      error: 'Server error during login',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
+// ✅ ADD ADMIN AUTH CHECK ROUTE
+app.get('/api/admin/check-auth', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        isAuthenticated: false,
+        error: 'No token provided'
+      });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const Admin = require('./models/Admin.cjs');
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey');
+    
+    const admin = await Admin.findById(decoded.id);
+    if (!admin) {
+      return res.status(401).json({ 
+        success: false, 
+        isAuthenticated: false,
+        error: 'Admin not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      isAuthenticated: true,
+      username: admin.username,
+      role: admin.role,
+      expiresAt: decoded.exp
+    });
+  } catch (error) {
+    console.error('Auth check error:', error.message);
+    res.status(401).json({ 
+      success: false, 
+      isAuthenticated: false,
+      error: 'Invalid or expired token'
     });
   }
 });
@@ -531,7 +621,10 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Animabing Server Running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    adminAvailable: true,
+    loginEndpoint: '/api/admin/login'
   });
 });
 
@@ -593,61 +686,137 @@ app.get('/', (req, res) => {
           align-items: center;
           height: 100vh;
           margin: 0;
+          padding: 20px;
         }
         .container {
           text-align: center;
           padding: 2rem;
+          max-width: 800px;
+          width: 100%;
         }
         h1 {
           color: #8B5CF6;
           margin-bottom: 1rem;
+          font-size: 2.5rem;
+        }
+        h2 {
+          color: #7C3AED;
+          margin-top: 2rem;
         }
         a {
           color: #8B5CF6;
           text-decoration: none;
           font-weight: bold;
           margin: 0 10px;
+          padding: 8px 16px;
+          border-radius: 6px;
+          background: rgba(139, 92, 246, 0.1);
+          transition: all 0.3s;
+          display: inline-block;
+          margin: 5px;
         }
         a:hover {
           text-decoration: underline;
+          background: rgba(139, 92, 246, 0.2);
+          transform: translateY(-2px);
         }
         .emergency-info {
+          background: #1a1c2c;
+          padding: 1.5rem;
+          border-radius: 12px;
+          margin: 1.5rem 0;
+          text-align: left;
+          border-left: 4px solid #EF4444;
+        }
+        .admin-info {
+          background: rgba(139, 92, 246, 0.1);
+          padding: 1.5rem;
+          border-radius: 12px;
+          margin: 1.5rem 0;
+          text-align: left;
+          border-left: 4px solid #8B5CF6;
+        }
+        .ad-info {
+          background: #2a1c4c;
+          padding: 1.5rem;
+          border-radius: 12px;
+          margin: 1.5rem 0;
+          text-align: left;
+          border-left: 4px solid #10B981;
+        }
+        .credentials {
           background: #1a1c2c;
           padding: 1rem;
           border-radius: 8px;
           margin: 1rem 0;
-          text-align: left;
+          font-family: monospace;
         }
-        .ad-info {
-          background: #2a1c4c;
-          padding: 1rem;
-          border-radius: 8px;
-          margin: 1rem 0;
-          text-align: left;
+        .success {
+          color: #10B981;
+        }
+        .warning {
+          color: #F59E0B;
+        }
+        .error {
+          color: #EF4444;
+        }
+        .section {
+          margin: 2rem 0;
+        }
+        code {
+          background: rgba(0,0,0,0.3);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: monospace;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>Animabing Server</h1>
-        <p>✅ Backend API is running correctly</p>
-        <p>📺 Frontend: <a href="https://rainbow-sfogliatella-b724c0.netlify.app" target="_blank">Netlify</a></p>
-        <p>⚙️ Admin Access: Press Ctrl+Shift+Alt on the frontend</p>
+        <h1>🚀 Animabing Server</h1>
+        <p class="success">✅ Backend API is running correctly</p>
+        
+        <div class="admin-info">
+          <h2>🔧 Admin Access</h2>
+          <p><strong>Frontend Admin Panel:</strong> <a href="https://animabing.pages.dev/admin/login" target="_blank">Go to Admin Login</a></p>
+          
+          <div class="credentials">
+            <p><strong>Default Admin Credentials:</strong></p>
+            <p>Username: <code>Hellobrother</code></p>
+            <p>Password: <code>Anime2121818144</code></p>
+          </div>
+          
+          <p><a href="/api/admin/debug" target="_blank">Check Admin Status</a></p>
+          <p><a href="/api/admin/login" target="_blank">Test Login API</a></p>
+        </div>
+        
+        <div class="section">
+          <h2>📊 API Endpoints</h2>
+          <p><a href="/api/health" target="_blank">Health Check</a></p>
+          <p><a href="/api/anime" target="_blank">All Anime</a></p>
+          <p><a href="/api/anime/featured" target="_blank">Featured Anime</a></p>
+          <p><a href="/api/social" target="_blank">Social Media Links</a></p>
+        </div>
         
         <div class="ad-info">
           <h3>📢 Ad Management:</h3>
           <p>Active Ad Slots: <a href="/api/ad-slots/active" target="_blank">Check Active Ads</a></p>
           <p>All Ad Slots: <a href="/api/debug/ad-slots" target="_blank">Debug Ad Slots</a></p>
-          <p>Admin Panel: <a href="/admin" target="_blank">Go to Admin</a></p>
+          <p>Ad Analytics: <a href="/api/admin/protected/ad-analytics" target="_blank">View Analytics</a> (Admin Only)</p>
         </div>
         
         <div class="emergency-info">
-          <h3>🔧 Emergency Featured Fix:</h3>
-          <p>Click below to set all anime as featured:</p>
-          <p><a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a></p>
+          <h3>🚨 Emergency Fixes:</h3>
+          <p class="warning">Use these only if admin login is not working:</p>
+          <p><a href="/api/admin/emergency-reset" target="_blank">Emergency Admin Reset</a> - Creates new admin</p>
+          <p><a href="/api/admin/create-default-admin" target="_blank">Create Default Admin</a> - Creates default admin user</p>
+          <p><a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a> - Fix homepage</p>
         </div>
         
-        <p><a href="/api/health">Health Check</a> | <a href="/api/anime/featured">Check Featured</a></p>
+        <div class="section">
+          <p><strong>🌐 Frontend:</strong> <a href="https://animabing.pages.dev" target="_blank">https://animabing.pages.dev</a></p>
+          <p><strong>🔗 API Base:</strong> <a href="/api" target="_blank">https://animabing.onrender.com/api</a></p>
+        </div>
       </div>
     </body>
     </html>
@@ -657,10 +826,28 @@ app.get('/', (req, res) => {
 // ✅ START SERVER
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🔧 Admin: ${process.env.ADMIN_USER} / ${process.env.ADMIN_PASS}`);
-  console.log(`🌐 Frontend:  https://animabing.pages.dev`);
-  console.log(`🔗 API: https://animabing.onrender.com/api`);
-  console.log(`📢 Active Ad Slots: https://animabing.onrender.com/api/ad-slots/active`);
-  console.log(`🆕 Emergency Route: https://animabing.onrender.com/api/emergency/set-all-featured`);
+  console.log(`
+  ============================================
+  🚀 Animabing Server Started Successfully!
+  ============================================
+  Port: ${PORT}
+  Environment: ${process.env.NODE_ENV || 'development'}
+  Frontend: https://animabing.pages.dev
+  Admin Login: https://animabing.pages.dev/admin/login
+  API Base: https://animabing.onrender.com/api
+  
+  🔧 Admin Credentials:
+  Username: ${process.env.ADMIN_USER || 'Hellobrother'}
+  Password: ${process.env.ADMIN_PASS || 'Anime2121818144'}
+  
+  📊 Debug Endpoints:
+  Health Check: https://animabing.onrender.com/api/health
+  Admin Debug: https://animabing.onrender.com/api/admin/debug
+  Active Ads: https://animabing.onrender.com/api/ad-slots/active
+  
+  🚨 Emergency Routes:
+  Admin Reset: https://animabing.onrender.com/api/admin/emergency-reset
+  Set Featured: https://animabing.onrender.com/api/emergency/set-all-featured
+  ============================================
+  `);
 });
