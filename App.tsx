@@ -1,11 +1,5 @@
-  // App.tsx - FIXED SEARCH RELOAD ISSUE
-// ⭐⭐⭐ TOP 4 LINES REMOVE KAREIN - CONSOLE BAND HAI ⭐⭐⭐
-// if (import.meta.env.PROD) {
-//   console.log = console.info = console.debug = console.warn = 
-//   console.error = console.trace = console.table = console.dir = 
-//   console.group = console.groupEnd = console.groupCollapsed = 
-//   console.time = console.timeEnd = () => {};
-// }
+  // App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE
+// ✅ ALL ADS-RELATED CODE REMOVED
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
