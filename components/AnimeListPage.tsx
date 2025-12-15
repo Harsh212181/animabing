@@ -2,10 +2,6 @@
 import type { Anime, FilterType } from '../src/types';
 import { getAllAnime } from '../services/animeService';
 import Spinner from './Spinner';
-// import AdSlot from './AdSlot'; // ✅ TEMPORARILY COMMENTED OUT
-
-// ✅ ADD THIS FLAG TO TEMPORARILY HIDE ALL ADS
-const SHOW_ADS = false;
 
 interface AnimeListPageProps {
   onAnimeSelect: (anime: Anime) => void;
@@ -129,13 +125,6 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect }) => {
           </div>
         </div>
       </div>
-
-      {/* Ad before anime list - ONLY SHOW WHEN SHOW_ADS IS TRUE */}
-      {SHOW_ADS && (
-        <div className="mb-6 hidden lg:block">
-          {/* <AdSlot position="in_content" /> */}
-        </div>
-      )}
       
       {isLoading && (
         <div className="flex justify-center items-center h-64">
