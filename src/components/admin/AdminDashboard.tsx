@@ -1,4 +1,4 @@
-  // src/components/admin/AdminDashboard.tsx - UPDATED WITH ENHANCED UI
+   // src/components/admin/AdminDashboard.tsx - UPDATED WITH ENHANCED UI
 import React, { useState, useEffect } from 'react';
 import AnimeListTable from './AnimeListTable';
 import AddAnimeForm from './AddAnimeForm';
@@ -210,7 +210,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
                 {tabs.find(t => t.id === activeTab)?.label}
               </h1>
-              <p className="text-sm text-slate-400 mt-2">Manage your content efficiently • Welcome back, <span className="text-purple-300 font-semibold">{user.username || 'Admin'}</span>! 👋</p>
+              <p className="text-sm text-slate-400 mt-2">Manage your content efficiently •Welcome back Harsh Rathore, <span className="text-purple-300 font-semibold">{user.username || 'Admin'}</span>! 👋</p>
             </div>
             <button
               onClick={loadInitialData}
@@ -266,3 +266,4 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 };
 
 export default AdminDashboard;
+
