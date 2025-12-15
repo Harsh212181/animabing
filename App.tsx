@@ -1,4 +1,4 @@
- // App.tsx - SECRET CODE VERSION
+  // App.tsx - FIXED SEARCH RELOAD ISSUE
 // ⭐⭐⭐ TOP 4 LINES REMOVE KAREIN - CONSOLE BAND HAI ⭐⭐⭐
 // if (import.meta.env.PROD) {
 //   console.log = console.info = console.debug = console.warn = 
@@ -7,7 +7,7 @@
 //   console.time = console.timeEnd = () => {};
 // }
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
 import Header from './components/Header';
@@ -149,6 +149,9 @@ const MainApp: React.FC = () => {
   const [typedText, setTypedText] = useState('');
   const [showCodeHint, setShowCodeHint] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // ✅ SEARCH DEBOUNCE REF
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // ✅ DUMMY FUNCTIONS FOR HEADER PROPS
   const dummyFilterFunction = (filter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => {
@@ -311,6 +314,10 @@ const MainApp: React.FC = () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      // Cleanup search debounce
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
     };
   }, [typedText]);
 
@@ -341,15 +348,35 @@ const MainApp: React.FC = () => {
     navigate(-1);
   };
 
-  const handleSearchChange = (query: string) => {
+  // ✅ FIXED: handleSearchChange WITHOUT PAGE RELOAD
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    // Search के लिए भी page reload करें
-    if (query.trim()) {
-      window.location.href = `/?search=${encodeURIComponent(query.trim())}`;
-    } else {
-      window.location.href = '/';
+    
+    // Debounce the search to avoid rapid updates
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
-  };
+    
+    // Update URL without reloading page
+    searchDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      
+      if (query.trim()) {
+        params.set('search', query.trim());
+      } else {
+        params.delete('search');
+      }
+      
+      // Update URL without reloading page
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.pushState({}, '', newUrl);
+      
+      // Log in development only
+      if (import.meta.env.DEV) {
+        console.log('🔍 Search updated to:', query);
+      }
+    }, 400); // 400ms debounce
+  }, []);
   
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(newFilter);
@@ -359,7 +386,7 @@ const MainApp: React.FC = () => {
     if (destination === 'list') {
       navigate('/anime');
     } else {
-      window.location.href = '/';
+      navigate('/');
     }
     if (destination === 'home') {
       setFilter('All');
