@@ -1,14 +1,13 @@
-  // App.tsx - FULLY FIXED VERSION
-// ⭐⭐⭐ SABSE PEHLE YE 4 LINES ADD KAREIN ⭐⭐⭐
-if (import.meta.env.PROD) {
-  // Saare console methods completely disable karein
-  console.log = console.info = console.debug = console.warn = 
-  console.error = console.trace = console.table = console.dir = 
-  console.group = console.groupEnd = console.groupCollapsed = 
-  console.time = console.timeEnd = () => {};
-}
+ // App.tsx - SECRET CODE VERSION
+// ⭐⭐⭐ TOP 4 LINES REMOVE KAREIN - CONSOLE BAND HAI ⭐⭐⭐
+// if (import.meta.env.PROD) {
+//   console.log = console.info = console.debug = console.warn = 
+//   console.error = console.trace = console.table = console.dir = 
+//   console.group = console.groupEnd = console.groupCollapsed = 
+//   console.time = console.timeEnd = () => {};
+// }
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import type { Anime, FilterType, ContentType, ContentTypeFilter } from './src/types';
 import Header from './components/Header';
@@ -16,7 +15,7 @@ import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import AnimeListPage from './components/AnimeListPage';
 import AnimeDetailPage from './components/AnimeDetailPage';
-import DownloadRedirectPage from './components/DownloadRedirectPage'; // ✅ ADDED
+import DownloadRedirectPage from './components/DownloadRedirectPage';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Spinner from './components/Spinner';
 import AdminLogin from './src/components/admin/AdminLogin';
@@ -145,6 +144,11 @@ const MainApp: React.FC = () => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [showAdminButton, setShowAdminButton] = useState(false);
+  
+  // ✅ SECRET CODE STATES
+  const [typedText, setTypedText] = useState('');
+  const [showCodeHint, setShowCodeHint] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ✅ DUMMY FUNCTIONS FOR HEADER PROPS
   const dummyFilterFunction = (filter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => {
@@ -228,17 +232,87 @@ const MainApp: React.FC = () => {
     initializeApp();
   }, []);
 
+  // ✅ SECRET CODE KEYBOARD LISTENER - TYPE "2007harsh" FOR DIRECT ADMIN
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.altKey) {
+      // Check if typing in input/textarea, then ignore
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Secret code typing logic
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const newTypedText = (typedText + e.key).toLowerCase();
+        setTypedText(newTypedText);
+        setShowCodeHint(true);
+        
+        if (import.meta.env.DEV) {
+          console.log(`⌨️ Typing: "${newTypedText}"`);
+        }
+        
+        // Check for secret code "2007harsh"
+        if (newTypedText.includes('2007harsh')) {
+          console.log('🎯 SECRET CODE "2007harsh" DETECTED! Opening admin...');
+          e.preventDefault();
+          
+          setAdminView('login');
+          setTypedText('');
+          setShowCodeHint(false);
+          
+          // Show success notification
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 99999;
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+            animation: fadeInOut 3s ease-in-out;
+            font-size: 16px;
+          `;
+          notification.innerHTML = '✅ Admin Access Granted!';
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 3000);
+        }
+        
+        // Reset typing after 3 seconds of inactivity
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        
+        typingTimeoutRef.current = setTimeout(() => {
+          setTypedText('');
+          setShowCodeHint(false);
+        }, 3000);
+      }
+      
+      // Keep old shortcut as backup (optional)
+      if (e.ctrlKey && e.altKey && e.shiftKey) {
         e.preventDefault();
         setShowAdminButton(prev => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [typedText]);
 
   const handleAdminLogin = (token: string, username: string) => {
     localStorage.setItem('adminToken', token);
@@ -371,6 +445,56 @@ const MainApp: React.FC = () => {
       <Footer />
       <ScrollToTopButton />
       
+      {/* Secret Code Typing Hint */}
+      {showCodeHint && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999]">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-cyan-500/50 rounded-xl p-4 shadow-2xl backdrop-blur-sm min-w-[300px]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-cyan-600/20 p-2 rounded-lg">
+                  <span className="text-cyan-400">🔐</span>
+                </div>
+                <div>
+                  <div className="text-sm text-cyan-300 font-medium">Secret Code Active</div>
+                  <div className="text-xs text-slate-400">Type "2007harsh" for admin access</div>
+                </div>
+              </div>
+              <div className="text-slate-500 text-sm">
+                {typedText.length}/9
+              </div>
+            </div>
+            
+            <div className="mb-3">
+              <div className="text-xs text-slate-400 mb-1">Current typing:</div>
+              <div className="flex items-center gap-1">
+                {Array.from('2007harsh').map((char, index) => (
+                  <div 
+                    key={index}
+                    className={`w-7 h-8 flex items-center justify-center rounded text-sm font-mono font-bold
+                      ${index < typedText.length 
+                        ? typedText[index] === char
+                          ? 'bg-green-600 text-white border border-green-400' 
+                          : 'bg-red-600 text-white border border-red-400'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                      }`}
+                  >
+                    {char}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-green-500 via-cyan-500 to-blue-500 h-full transition-all duration-300"
+                style={{ width: `${(typedText.length / 9) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Old button (optional - keep or remove) */}
       {showAdminButton && (
         <div className="fixed bottom-4 left-4 z-50 animate-fade-in">
           <button
