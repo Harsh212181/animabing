@@ -1,6 +1,5 @@
-   // components/AnimeDetailPage.tsx - OPTIMIZED VERSION WITH IMAGE DELIVERY FIXES
+  // components/AnimeDetailPage.tsx - UPDATED VERSION WITHOUT EPISODE/MOVIE NUMBERS
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import ReportButton from './ReportButton';
@@ -62,12 +61,16 @@ const generateSrcSet = (url: string, baseWidth: number, baseHeight: number): str
   }
 };
 
+// ✅ Helper function to get random download link
+const getRandomDownloadLink = (downloadLinks: DownloadLink[]): string | null => {
+  if (!downloadLinks || downloadLinks.length === 0) return null;
+  
+  // Generate random index
+  const randomIndex = Math.floor(Math.random() * downloadLinks.length);
+  return downloadLinks[randomIndex].url;
+};
+
 const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) => {
-  const navigate = useNavigate();
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  const [selectedDownloadLinks, setSelectedDownloadLinks] = useState<DownloadLink[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(true);
   const [chaptersLoading, setChaptersLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<number>(1);
@@ -78,6 +81,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
   // ✅ STATE FOR FULL ANIME DETAILS
   const [fullAnime, setFullAnime] = useState<Anime | null>(null);
   const [animeLoading, setAnimeLoading] = useState(false);
+  const [downloadingItem, setDownloadingItem] = useState<string | null>(null);
 
   // Check content types
   const isManga = anime?.contentType === 'Manga';
@@ -216,47 +220,38 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     fetchContent();
   }, [anime, isManga]);
 
-  // ✅ FIXED: Handle download click - ONLY ONE ROUTE (/download) USE KARO
-  const handleDownloadClick = (item: Episode | Chapter) => {
-    if (isManga) {
-      setSelectedChapter(item as Chapter);
-    } else {
-      setSelectedEpisode(item as Episode);
-    }
-    
-    // ✅ FIXED: Use type assertion to access downloadLinks
-    const episodeItem = item as any;
-    const downloadLinks: DownloadLink[] = episodeItem.downloadLinks || [];
-    
-    if (downloadLinks.length === 0) {
-      alert(
-        `${getContentLabelSingular()} - Download links will be added soon!`
-      );
-      return;
-    }
-    
-    if (downloadLinks.length === 1) {
-      // Only one download link, redirect directly
-      const link = downloadLinks[0];
-      window.open(link.url, '_blank');
-      return;
-    }
-    
-    // Multiple download links available
-    setSelectedDownloadLinks(downloadLinks);
-    
-    // ✅ FIXED: SIRF EK HI ROUTE USE KARO (/download)
-    navigate('/download', {
-      state: {
-        title: item.title || `${getContentLabelSingular()} ${
-          isManga ? (item as any).chapterNumber : (item as any).episodeNumber
-        }`,
-        animeTitle: anime?.title || '',
-        contentType: isManga ? 'chapter' : 'episode',
-        contentNumber: isManga ? (item as any).chapterNumber : (item as any).episodeNumber,
-        downloadLinks: downloadLinks
+  // ✅ UPDATED: Handle download click - RANDOM LINK OPEN IN NEW TAB (NO ALERT)
+  const handleDownloadClick = async (item: Episode | Chapter) => {
+    try {
+      const itemData = item as any;
+      const downloadLinks: DownloadLink[] = itemData.downloadLinks || [];
+      
+      if (downloadLinks.length === 0) {
+        alert(
+          `${getContentLabelSingular()} - Download links will be added soon!`
+        );
+        return;
       }
-    });
+      
+      // Set loading state for this specific item
+      setDownloadingItem(itemData._id);
+      
+      // ✅ Get random download link
+      const randomLink = getRandomDownloadLink(downloadLinks);
+      
+      if (randomLink) {
+        // ✅ Open random link in new tab (NO ALERT)
+        window.open(randomLink, '_blank');
+      } else {
+        alert('⚠️ No valid download link found!');
+      }
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('❌ Failed to start download. Please try again.');
+    } finally {
+      setDownloadingItem(null);
+    }
   };
 
   // ✅ Download button component
@@ -264,7 +259,8 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     item: Episode | Chapter; 
     className?: string;
     showText?: boolean;
-  }> = ({ item, className = '', showText = true }) => {
+    itemId: string;
+  }> = ({ item, className = '', showText = true, itemId }) => {
     const episodeItem = item as any;
     const downloadLinks: DownloadLink[] = episodeItem.downloadLinks || [];
     
@@ -276,7 +272,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
               `${getContentLabelSingular()} - Download links will be added soon!`
             );
           }}
-          className={className}
+          className={`${className} opacity-70 cursor-not-allowed`}
           title="Download links not available yet"
           disabled
         >
@@ -288,10 +284,15 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     return (
       <button
         onClick={() => handleDownloadClick(item)}
-        className={className}
+        className={`${className} ${downloadingItem === itemId ? 'animate-pulse' : ''}`}
         title={`Download ${item.title || getContentLabelSingular()}`}
+        disabled={downloadingItem === itemId}
       >
-        {showText ? 'Download' : <DownloadIcon className="h-3 w-3" />}
+        {downloadingItem === itemId ? (
+          showText ? 'Downloading...' : <Spinner size="sm" />
+        ) : (
+          showText ? 'Download' : <DownloadIcon className="h-3 w-3" />
+        )}
       </button>
     );
   };
@@ -491,22 +492,21 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {/* ✅ UPDATED: Only show EP/MOVIE/CHAPTER without numbers */}
                             <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded text-xs font-bold min-w-10 text-center flex-shrink-0">
-                              {isMovie ? 'MOVIE' : 'EP'}{' '}
-                              {isManga ? itemData.chapterNumber : itemData.episodeNumber}
+                              {isMovie ? 'MOVIE' : (isManga ? 'CHAPTER' : 'EP')}
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-white font-medium text-xs break-words">
                                 {itemData.title ||
-                                  `${getContentLabelSingular()} ${
-                                    isManga ? itemData.chapterNumber : itemData.episodeNumber
-                                  }`}
+                                  `${getContentLabelSingular()}`}
                               </h3>
                             </div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <DownloadButton
                               item={item as Episode | Chapter}
+                              itemId={itemData._id}
                               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white p-2 rounded-lg shadow-lg hover:shadow-blue-500/20 transition-all duration-200 flex items-center justify-center"
                               showText={false}
                             />
@@ -687,17 +687,15 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-start sm:items-center gap-4 flex-1">
                             <div className="flex items-center gap-3">
+                              {/* ✅ UPDATED: Only show EP/MOVIE/CHAPTER without numbers */}
                               <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-bold min-w-16 text-center">
-                                {isMovie ? 'MOVIE' : 'EP'}{' '}
-                                {isManga ? itemData.chapterNumber : itemData.episodeNumber}
+                                {isMovie ? 'MOVIE' : (isManga ? 'CHAPTER' : 'EP')}
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-white font-semibold text-lg truncate">
                                 {itemData.title ||
-                                  `${getContentLabelSingular()} ${
-                                    isManga ? itemData.chapterNumber : itemData.episodeNumber
-                                  }`}
+                                  `${getContentLabelSingular()}`}
                               </h3>
                               {itemData.session > 1 && (
                                 <p className="text-slate-400 text-sm mt-1">Session {itemData.session}</p>
@@ -707,6 +705,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                           <div className="flex gap-2 flex-shrink-0">
                             <DownloadButton
                               item={item as Episode | Chapter}
+                              itemId={itemData._id}
                               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium flex items-center gap-2 hover:scale-105 active:scale-95"
                               showText={true}
                             />
@@ -729,25 +728,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             )}
           </div>
         </div>
-
-        {/* Download Modal */}
-        {showDownloadModal && (selectedEpisode || selectedChapter) && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in backdrop-blur-sm">
-            <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg shadow-2xl text-center max-w-xs mx-4 transform animate-scale-in">
-              <div className="w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <DownloadIcon className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="text-base font-bold text-purple-400 mb-2">Preparing Your Download</h3>
-              <p className="text-slate-300 text-sm mb-3">
-                {getContentLabelSingular()} is being prepared...
-              </p>
-              <Spinner size="sm" />
-              <div className="mt-3 bg-slate-800/50 rounded-lg p-2">
-                <p className="text-xs text-slate-500">You will be redirected to the download page shortly.</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
