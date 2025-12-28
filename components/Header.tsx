@@ -132,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <h3 className="text-white text-xl font-semibold mb-2">Loading AnimeBing</h3>
+          <h3 className="text-white text-xl font-semibold mb-2">Loading animebing.in</h3>
           <p className="text-slate-400">Preparing your content...</p>
         </div>
       </div>
@@ -143,15 +143,28 @@ const Header: React.FC<HeaderProps> = ({
     <>
       <NavigationLoader />
       
-      <header className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 backdrop-blur-lg sticky top-0 z-40 relative border-b border-purple-500/20">
+      <header className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 backdrop-blur-lg sticky top-0 z-40 border-b border-purple-500/20">
         <div className="container mx-auto px-2 md:px-3">
           <div className="flex justify-between items-center h-12 md:h-16">
             <button 
               onClick={() => handleNavClick('home')} 
-              className="text-base md:text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent"
+              className="text-base md:text-xl font-bold text-white flex items-center"
               disabled={isNavigating}
             >
-              Anime<span className="text-purple-400">bing</span>
+              {/* Skull emoji with better quality */}
+              <span 
+                className="text-xl md:text-2xl mr-1"
+                style={{
+                  fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif',
+                  textShadow: '0 0 1px rgba(255,255,255,0.5)',
+                  filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.3))'
+                }}
+              >
+                ☠️
+              </span>
+              <span className="bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                anime<span className="text-purple-400">bing.in</span>
+              </span>
             </button>
 
             {/* Desktop Nav */}
