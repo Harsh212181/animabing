@@ -1,5 +1,6 @@
-  // App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE
+  // App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS
 // ✅ ALL ADS-RELATED CODE REMOVED
+// ✅ SECRET CODE TYPING LOGS REMOVED
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
@@ -230,6 +231,7 @@ const MainApp: React.FC = () => {
   }, []);
 
   // ✅ SECRET CODE KEYBOARD LISTENER - TYPE "2007harsh" FOR DIRECT ADMIN
+  // ✅ CONSOLE LOGS REMOVED - NO TEXT WILL SHOW IN CONSOLE WHEN TYPING
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Check if typing in input/textarea, then ignore
@@ -244,13 +246,11 @@ const MainApp: React.FC = () => {
         setTypedText(newTypedText);
         setShowCodeHint(true);
         
-        if (import.meta.env.DEV) {
-          console.log(`⌨️ Typing: "${newTypedText}"`);
-        }
+        // ✅ NO CONSOLE LOG HERE - TYPING WON'T SHOW IN CONSOLE
         
         // Check for secret code "2007harsh"
         if (newTypedText.includes('2007harsh')) {
-          console.log('🎯 SECRET CODE "2007harsh" DETECTED! Opening admin...');
+          // ✅ NO CONSOLE LOG HERE EITHER
           e.preventDefault();
           
           setAdminView('login');
