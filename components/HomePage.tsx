@@ -1,4 +1,4 @@
-  import React, { useState, useEffect, useMemo, useCallback } from 'react';
+  import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
 import { SkeletonLoader } from './SkeletonLoader';
@@ -8,12 +8,36 @@ import FeaturedAnimeCarousel from '../src/components/FeaturedAnimeCarousel';
 interface Props {
   onAnimeSelect: (anime: Anime) => void;
   searchQuery: string;
-  filter: FilterType;               // ← FIX ADDED
+  filter: FilterType;
   contentType: ContentTypeFilter;
 }
 
 const ANIME_FIELDS =
   'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList';
+
+// Enhanced border colors with stronger gradients
+const BORDER_COLORS = [
+  'from-purple-600 via-blue-500 to-purple-600',
+  'from-red-500 via-pink-500 to-red-500',
+  'from-green-500 via-teal-500 to-green-500',
+  'from-yellow-500 via-orange-500 to-yellow-500',
+  'from-indigo-500 via-purple-500 to-indigo-500',
+  'from-pink-500 via-rose-500 to-pink-500',
+  'from-cyan-500 via-blue-500 to-cyan-500',
+  'from-emerald-500 via-green-500 to-emerald-500',
+];
+
+// Stronger glow colors for hover effects
+const GLOW_COLORS = [
+  ['#8B5CF6', '#3B82F6', '#8B5CF6'], // purple-blue-purple
+  ['#EF4444', '#EC4899', '#EF4444'], // red-pink-red
+  ['#10B981', '#0D9488', '#10B981'], // green-teal-green
+  ['#F59E0B', '#F97316', '#F59E0B'], // yellow-orange-yellow
+  ['#6366F1', '#8B5CF6', '#6366F1'], // indigo-purple-indigo
+  ['#EC4899', '#F472B6', '#EC4899'], // pink-rose-pink
+  ['#06B6D4', '#3B82F6', '#06B6D4'], // cyan-blue-cyan
+  ['#10B981', '#059669', '#10B981'], // emerald-green-emerald
+];
 
 const HomePage: React.FC<Props> = ({
   onAnimeSelect,
@@ -21,7 +45,7 @@ const HomePage: React.FC<Props> = ({
   filter,
   contentType
 }) => {
-  const [localFilter, setLocalFilter] = useState<FilterType>(filter || 'All');  // ← FIX
+  const [localFilter, setLocalFilter] = useState<FilterType>(filter || 'All');
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [featuredAnimes, setFeaturedAnimes] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,19 +53,45 @@ const HomePage: React.FC<Props> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Naya state border color ke liye
+  const [currentBorderColorIndex, setCurrentBorderColorIndex] = useState(0);
+  
+  // Refs for tracking
+  const isMounted = useRef(true);
+  const lastSearchQuery = useRef(searchQuery);
+
+  // Border color ka interval - har 18 seconds (30s se 18s kiya)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBorderColorIndex((prevIndex) => 
+        (prevIndex + 1) % BORDER_COLORS.length
+      );
+    }, 18000); // 30 seconds se 18 seconds kiya
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Load Featured
   const fetchFeaturedAnimes = useCallback(async () => {
     try {
       const data = await getFeaturedAnime();
-      if (data?.length) {
+      if (data?.length && isMounted.current) {
         const limited = data.slice(0, 10);
         setFeaturedAnimes(limited);
         localStorage.setItem('featuredAnimes', JSON.stringify(limited));
       }
     } catch {
       const stored = localStorage.getItem('featuredAnimes');
-      if (stored) {
+      if (stored && isMounted.current) {
         try {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) setFeaturedAnimes(parsed.slice(0, 10));
@@ -52,6 +102,7 @@ const HomePage: React.FC<Props> = ({
 
   // Heading
   const getAllContentHeading = useCallback(() => {
+    if (isSearching && searchQuery) return `Search: ${searchQuery}`;
     if (contentType !== 'All') return `All ${contentType}`;
     switch (localFilter) {
       case 'Hindi Dub': return 'All Hindi Dub';
@@ -59,81 +110,125 @@ const HomePage: React.FC<Props> = ({
       case 'English Sub': return 'All English Sub';
       default: return 'All Content';
     }
-  }, [localFilter, contentType]);
+  }, [localFilter, contentType, isSearching, searchQuery]);
 
   // Initial load
-  const loadInitialAnime = useCallback(async () => {
+  const loadInitialAnime = useCallback(async (isSearch: boolean = false) => {
+    if (!isMounted.current) return;
+    
     try {
       setIsLoading(true);
       setError(null);
-
-      const data = await getAnimePaginated(1, 36, ANIME_FIELDS);
-
-      if (data?.length) {
-        setAnimeList(data);
-        setHasMore(data.length === 36);
-        setCurrentPage(1);
+      
+      if (isSearch) {
+        // For search
+        const data = await searchAnime(searchQuery, ANIME_FIELDS);
+        if (data?.length && isMounted.current) {
+          setAnimeList(data);
+          setHasMore(false);
+          setCurrentPage(1);
+          setIsSearching(true);
+        } else {
+          setAnimeList([]);
+          setHasMore(false);
+        }
       } else {
-        setError('No anime found');
+        // For normal pagination
+        const data = await getAnimePaginated(1, 36, ANIME_FIELDS);
+        if (data?.length && isMounted.current) {
+          setAnimeList(data);
+          setHasMore(data.length === 36);
+          setCurrentPage(1);
+          setIsSearching(false);
+        } else {
+          setError('No anime found');
+        }
       }
-    } catch {
-      setError('Failed to load anime');
+    } catch (err) {
+      if (isMounted.current) {
+        setError(isSearch ? 'Search failed' : 'Failed to load anime');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
-  }, []);
+  }, [searchQuery]);
 
   // Load More
   const loadMoreAnime = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || isSearching) return;
+    
+    if (!isMounted.current) return;
 
     setIsLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
       const data = await getAnimePaginated(nextPage, 24, ANIME_FIELDS);
 
-      if (data?.length) {
-        setAnimeList(prev => [...prev, ...data]);
-        setCurrentPage(nextPage);
-        setHasMore(data.length === 24);
+      if (data?.length && isMounted.current) {
+        // Filter out duplicates by checking IDs
+        const existingIds = new Set(animeList.map(anime => anime.id || anime._id));
+        const newAnimes = data.filter(anime => 
+          !existingIds.has(anime.id || anime._id)
+        );
+        
+        if (newAnimes.length > 0) {
+          setAnimeList(prev => [...prev, ...newAnimes]);
+          setCurrentPage(nextPage);
+          setHasMore(newAnimes.length === 24);
+        } else {
+          setHasMore(false);
+        }
       } else {
         setHasMore(false);
       }
-    } catch {}
-    finally {
-      setIsLoadingMore(false);
+    } catch {
+      // Handle error silently for load more
+    } finally {
+      if (isMounted.current) {
+        setIsLoadingMore(false);
+      }
     }
-  }, [currentPage, hasMore, isLoadingMore]);
+  }, [currentPage, hasMore, isLoadingMore, animeList, isSearching]);
 
-  // On mount
+  // On mount and when filter/contentType changes
   useEffect(() => {
-    loadInitialAnime();
-    fetchFeaturedAnimes();
-  }, []);
+    if (isMounted.current) {
+      loadInitialAnime();
+      if (!searchQuery) {
+        fetchFeaturedAnimes();
+      }
+    }
+  }, [filter, contentType]);
 
-  // Search
+  // Search effect - with improved logic
   useEffect(() => {
-    if (!searchQuery.trim()) return;
+    if (!isMounted.current) return;
 
     const timer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const data = await searchAnime(searchQuery, ANIME_FIELDS);
-        setAnimeList(data || []);
-        setFeaturedAnimes([]);
-        setHasMore(false);
-      } catch {
-        setError('Search failed');
-      } finally {
-        setIsLoading(false);
+      if (searchQuery.trim()) {
+        if (searchQuery !== lastSearchQuery.current) {
+          await loadInitialAnime(true);
+          lastSearchQuery.current = searchQuery;
+        }
+      } else {
+        // Clear search
+        if (lastSearchQuery.current !== '') {
+          loadInitialAnime(false);
+          fetchFeaturedAnimes();
+          lastSearchQuery.current = '';
+        }
       }
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, loadInitialAnime, fetchFeaturedAnimes]);
 
   // Filtering
   const filteredAnime = useMemo(() => {
+    if (!animeList.length) return [];
+    
     let list = [...animeList];
 
     if (contentType !== 'All') {
@@ -143,7 +238,19 @@ const HomePage: React.FC<Props> = ({
       list = list.filter(a => a.subDubStatus === localFilter);
     }
 
-    return list;
+    // Remove duplicates by ID
+    const uniqueAnimes: Anime[] = [];
+    const seenIds = new Set();
+    
+    for (const anime of list) {
+      const id = anime.id || anime._id;
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id);
+        uniqueAnimes.push(anime);
+      }
+    }
+    
+    return uniqueAnimes;
   }, [animeList, localFilter, contentType]);
 
   const filterButtons = [
@@ -157,17 +264,24 @@ const HomePage: React.FC<Props> = ({
 
   // Infinite Scroll
   useEffect(() => {
-    const handleScroll = () => {
-      const trigger = window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000;
+    if (isSearching) return;
 
-      if (trigger && !isLoadingMore && hasMore && !searchQuery) {
+    const handleScroll = () => {
+      if (isLoadingMore || !hasMore) return;
+      
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const docHeight = document.documentElement.offsetHeight;
+      
+      // Load more when 80% scrolled
+      if (scrollTop + windowHeight >= docHeight * 0.8) {
         loadMoreAnime();
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isLoadingMore, hasMore, searchQuery, loadMoreAnime]);
+  }, [isLoadingMore, hasMore, isSearching, loadMoreAnime]);
 
   // Full Loader
   if (isLoading && animeList.length === 0) {
@@ -201,10 +315,100 @@ const HomePage: React.FC<Props> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <style>{`
+        @keyframes enhanced-glow {
+          0%, 100% {
+            opacity: 0.8;
+            filter: drop-shadow(0 0 15px currentColor);
+          }
+          50% {
+            opacity: 1;
+            filter: drop-shadow(0 0 35px currentColor);
+          }
+        }
+        
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) rotate(45deg);
+          }
+          100% {
+            transform: translateX(100%) rotate(45deg);
+          }
+        }
+        
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
+        
+        @keyframes pulse-strong {
+          0%, 100% {
+            opacity: 0.7;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.9;
+            transform: scale(1.02);
+          }
+        }
+        
+        @keyframes color-shift {
+          0% {
+            filter: hue-rotate(0deg);
+          }
+          100% {
+            filter: hue-rotate(360deg);
+          }
+        }
+        
+        .enhanced-glow {
+          animation: pulse-strong 2.5s ease-in-out infinite, color-shift 10s linear infinite;
+        }
+        
+        .card-hover-effect:hover {
+          transform: translateY(-6px) scale(1.02);
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .shimmer-effect {
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.15),
+            transparent
+          );
+          animation: shimmer 2.5s infinite;
+        }
+        
+        @keyframes sparkle {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+        
+        .sparkle-effect {
+          animation: sparkle 1.5s ease-in-out infinite;
+        }
+      `}</style>
+      
       <div className="container mx-auto px-4 py-4 lg:py-8">
 
         {/* Featured */}
-        {!searchQuery && featuredAnimes.length > 0 && (
+        {!searchQuery && !isSearching && featuredAnimes.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
               Latest Content
@@ -217,27 +421,29 @@ const HomePage: React.FC<Props> = ({
         )}
 
         {/* Mobile Filter */}
-        <div className="mb-3 lg:hidden">
-          <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide">
-            {filterButtons.map(btn => (
-              <button
-                key={btn.key}
-                onClick={() => handleFilterChange(btn.key)}
-                className={`
-                  px-2.5 py-1.5 rounded text-[11px] font-medium transition-all duration-200
-                  border whitespace-nowrap flex-shrink-0 min-w-[62px]
-                  ${
-                    localFilter === btn.key
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-md'
-                      : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
-                  }
-                `}
-              >
-                {btn.label}
-              </button>
-            ))}
+        {!isSearching && (
+          <div className="mb-3 lg:hidden">
+            <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide">
+              {filterButtons.map(btn => (
+                <button
+                  key={btn.key}
+                  onClick={() => handleFilterChange(btn.key)}
+                  className={`
+                    px-2.5 py-1.5 rounded text-[11px] font-medium transition-all duration-200
+                    border whitespace-nowrap flex-shrink-0 min-w-[62px]
+                    ${
+                      localFilter === btn.key
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg shadow-blue-500/40'
+                        : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
+                    }
+                  `}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Result */}
         {filteredAnime.length === 0 ? (
@@ -247,11 +453,10 @@ const HomePage: React.FC<Props> = ({
               <h2 className="text-2xl font-bold text-white mb-3">
                 {searchQuery ? 'No Results Found' : 'No Content'}
               </h2>
-
-              {localFilter !== 'All' && (
+              {!searchQuery && localFilter !== 'All' && (
                 <button
                   onClick={() => handleFilterChange('All')}
-                  className="mt-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-3 rounded-xl font-bold"
+                  className="mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/40 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300"
                 >
                   Show All
                 </button>
@@ -264,28 +469,170 @@ const HomePage: React.FC<Props> = ({
               {getAllContentHeading()}
             </h2>
 
-            {/* Cards */}
+            {/* Cards - Glow effect aur increase kiya */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {filteredAnime.map((anime, i) => (
-                <AnimeCard
-                  key={anime.id || anime._id}
-                  anime={anime}
-                  onClick={onAnimeSelect}
-                  index={i}
-                  showStatus={true}
-                />
+                <div 
+                  key={`${anime.id || anime._id}-${i}`}
+                  className="group relative"
+                >
+                  {/* Main Enhanced Glow Effect - More intense */}
+                  <div 
+                    className={`absolute -inset-[1px] rounded-xl bg-gradient-to-br ${BORDER_COLORS[currentBorderColorIndex]} enhanced-glow transition-all duration-500`}
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}, ${GLOW_COLORS[currentBorderColorIndex][1]}, ${GLOW_COLORS[currentBorderColorIndex][2]})`,
+                    }}
+                  ></div>
+                  
+                  {/* Secondary Glow Layer - More intense */}
+                  <div 
+                    className="absolute -inset-0 rounded-xl opacity-50 blur-lg transition-all duration-700 group-hover:opacity-80 group-hover:blur-xl"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}80, ${GLOW_COLORS[currentBorderColorIndex][1]}80, ${GLOW_COLORS[currentBorderColorIndex][2]}80)`,
+                    }}
+                  ></div>
+                  
+                  {/* Third Glow Layer for extra effect */}
+                  <div 
+                    className="absolute -inset-1 rounded-xl opacity-20 blur-2xl transition-all duration-1000 group-hover:opacity-40"
+                    style={{
+                      backgroundImage: `radial-gradient(circle at center, ${GLOW_COLORS[currentBorderColorIndex][1]}60, transparent 70%)`,
+                    }}
+                  ></div>
+                  
+                  {/* Main Card Container */}
+                  <div className="card-hover-effect relative rounded-xl border border-slate-700/40 bg-gradient-to-b from-slate-900/95 to-slate-800/90 p-1.5 transition-all duration-500 overflow-hidden group-hover:border-transparent group-hover:shadow-2xl">
+                    
+                    {/* Shimmer Effect */}
+                    <div className="shimmer-effect"></div>
+                    
+                    {/* Enhanced Inner Glow Effect - More intense */}
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-50 transition-opacity duration-700"
+                      style={{
+                        background: `radial-gradient(circle at center, ${GLOW_COLORS[currentBorderColorIndex][1]}40 0%, transparent 70%)`,
+                      }}
+                    ></div>
+                    
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent opacity-50 group-hover:opacity-40 transition-opacity duration-500"></div>
+                    
+                    {/* Sparkle particles */}
+                    <div className="absolute top-2 right-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-100"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][0],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                        animationDelay: '0.2s'
+                      }}
+                    ></div>
+                    <div className="absolute bottom-2 left-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-100"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][1],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
+                        animationDelay: '0.5s'
+                      }}
+                    ></div>
+                    
+                    <AnimeCard
+                      anime={anime}
+                      onClick={onAnimeSelect}
+                      index={i}
+                      showStatus={true}
+                    />
+                    
+                    {/* Enhanced Corner Accents with Glow - More intense */}
+                    <div 
+                      className="absolute top-0 left-0 w-2 h-2 border-t border-l rounded-tl-xl opacity-0 group-hover:opacity-100 transition-all duration-300 sparkle-effect"
+                      style={{
+                        borderColor: GLOW_COLORS[currentBorderColorIndex][0],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][0]}, inset 0 0 4px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute top-0 right-0 w-2 h-2 border-t border-r rounded-tr-xl opacity-0 group-hover:opacity-100 transition-all duration-300 sparkle-effect"
+                      style={{
+                        borderColor: GLOW_COLORS[currentBorderColorIndex][1],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][1]}, inset 0 0 4px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
+                        animationDelay: '0.3s'
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute bottom-0 left-0 w-2 h-2 border-b border-l rounded-bl-xl opacity-0 group-hover:opacity-100 transition-all duration-300 sparkle-effect"
+                      style={{
+                        borderColor: GLOW_COLORS[currentBorderColorIndex][2],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][2]}, inset 0 0 4px ${GLOW_COLORS[currentBorderColorIndex][2]}`,
+                        animationDelay: '0.6s'
+                      }}
+                    ></div>
+                    <div 
+                      className="absolute bottom-0 right-0 w-2 h-2 border-b border-r rounded-br-xl opacity-0 group-hover:opacity-100 transition-all duration-300 sparkle-effect"
+                      style={{
+                        borderColor: GLOW_COLORS[currentBorderColorIndex][0],
+                        boxShadow: `0 0 8px ${GLOW_COLORS[currentBorderColorIndex][0]}, inset 0 0 4px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                        animationDelay: '0.9s'
+                      }}
+                    ></div>
+                    
+                    {/* Floating Dots/Sparkles - More intense */}
+                    <div className="absolute -top-0.5 -left-0.5 w-1.5 h-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 sparkle-effect"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][0],
+                        boxShadow: `0 0 10px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                        animation: 'float 1.8s ease-in-out infinite',
+                      }}
+                    ></div>
+                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 sparkle-effect"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][1],
+                        boxShadow: `0 0 10px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
+                        animation: 'float 1.8s ease-in-out infinite 0.6s',
+                        animationDelay: '0.2s'
+                      }}
+                    ></div>
+                    <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200 sparkle-effect"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][2],
+                        boxShadow: `0 0 10px ${GLOW_COLORS[currentBorderColorIndex][2]}`,
+                        animation: 'float 1.8s ease-in-out infinite 1.2s',
+                        animationDelay: '0.4s'
+                      }}
+                    ></div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-300 sparkle-effect"
+                      style={{
+                        background: GLOW_COLORS[currentBorderColorIndex][0],
+                        boxShadow: `0 0 10px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                        animation: 'float 1.8s ease-in-out infinite 1.8s',
+                        animationDelay: '0.6s'
+                      }}
+                    ></div>
+                  </div>
+                </div>
               ))}
             </div>
 
             {/* Load More */}
-            {hasMore && !searchQuery && (
+            {hasMore && !isSearching && !searchQuery && (
               <div className="text-center mt-10">
                 <button
                   onClick={loadMoreAnime}
                   disabled={isLoadingMore}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-2xl disabled:opacity-60"
+                  className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-purple-500/50 disabled:opacity-60 transition-all duration-300 group"
+                  style={{
+                    animation: 'pulse-strong 3s ease-in-out infinite'
+                  }}
                 >
-                  {isLoadingMore ? 'Loading...' : 'Load More'}
+                  {/* Button Glow Effect */}
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-400/40 to-pink-400/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  <span className="relative z-10">
+                    {isLoadingMore ? (
+                      <>
+                        <span className="inline-block animate-spin mr-2">⟳</span>
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More'
+                    )}
+                  </span>
                 </button>
               </div>
             )}
@@ -293,7 +640,14 @@ const HomePage: React.FC<Props> = ({
             {isLoadingMore && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-6">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonLoader key={i} />
+                  <div 
+                    key={`skeleton-${i}`} 
+                    className="relative rounded-xl border border-slate-700/40 p-1.5 bg-gradient-to-b from-slate-900/80 to-slate-800/70 overflow-hidden"
+                  >
+                    {/* Skeleton shimmer effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-700/20 to-transparent animate-shimmer"></div>
+                    <SkeletonLoader />
+                  </div>
                 ))}
               </div>
             )}
