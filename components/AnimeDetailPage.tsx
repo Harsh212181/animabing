@@ -527,8 +527,20 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             )}
             {/* ✅ ADDED: Tips section for mobile view - only for non-manga content */}
             {!isManga && (
-              <div className="mt-4 p-3 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-700/50 rounded-lg text-xs text-blue-300">
-                <span className="font-bold">💡 Tips:</span> If the audio of any episode or movie is incorrect, you can fix it by changing the audio language Hindi,Tamil,Telugu,English,Japanese in MX Player.
+              <div className="mt-4 p-3 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-700/50 rounded-lg">
+                <h4 className="text-xs font-bold text-blue-300 mb-2 flex items-center gap-1">
+                  <span className="text-blue-400">💡</span> Important Tips for Download:
+                </h4>
+                <ul className="space-y-2 text-xs text-blue-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">•</span>
+                    <span>If the audio of any episode or movie is incorrect, you can fix it by changing the audio language to Hindi in MX Player.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">•</span>
+                    <span>After the ad is completed, a white page will open. From there, you can download the episode or movie. This is a Google warning page that appears because the video file size is large.</span>
+                  </li>
+                </ul>
               </div>
             )}
           </div>
@@ -734,8 +746,20 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                 </div>
                 {/* ✅ ADDED: Tips section for PC view - only for non-manga content */}
                 {!isManga && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-700/50 rounded-xl text-sm text-blue-300">
-                    <span className="font-bold">💡 Tips:</span> If the audio of any episode or movie is incorrect, you can fix it by changing the audio language to Hindi,Tamil,Telugu,English,Japanese in MX Player.
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-700/50 rounded-xl">
+                    <h4 className="text-sm font-bold text-blue-300 mb-3 flex items-center gap-2">
+                      <span className="text-blue-400">💡</span> Important Tips for Download:
+                    </h4>
+                    <ul className="space-y-2 text-sm text-blue-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>If the audio of any episode or movie is incorrect, you can fix it by changing the audio language to Hindi in MX Player.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>After the ad is completed, a white page will open. From there, you can download the episode or movie. This is a Google warning page that appears because the video file size is large.</span>
+                      </li>
+                    </ul>
                   </div>
                 )}
               </>
