@@ -1,59 +1,109 @@
-// models/SocialMedia.cjs - NEW FILE
+ // models/SocialMedia.cjs - COMPLETE UPDATED VERSION
 const mongoose = require('mongoose');
 
 const socialMediaSchema = new mongoose.Schema({
   platform: {
     type: String,
-    enum: ['facebook', 'instagram', 'telegram', 'twitter', 'youtube'],
+    enum: ['facebook', 'instagram', 'telegram', 'twitter', 'youtube', 'whatsapp', 'discord'],
     required: true,
-    unique: true
+    unique: true,
+    lowercase: true
   },
   url: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^https?:\/\//.test(v);
+      },
+      message: 'URL must start with http:// or https://'
+    }
   },
   isActive: {
     type: Boolean,
     default: true
   },
-  icon: String,
-  displayName: String
-}, { timestamps: true });
+  icon: {
+    type: String,
+    default: ''
+  },
+  displayName: {
+    type: String,
+    required: true
+  }
+}, { 
+  timestamps: true 
+});
 
-// ✅ Initialize default social media links
+// ✅ Add pre-save middleware to set displayName if not provided
+socialMediaSchema.pre('save', function(next) {
+  if (!this.displayName) {
+    this.displayName = this.platform.charAt(0).toUpperCase() + this.platform.slice(1);
+  }
+  next();
+});
+
+// ✅ Static method to initialize default links
 socialMediaSchema.statics.initDefaultLinks = async function() {
   const defaultLinks = [
     { 
       platform: 'facebook', 
-      url: 'https://facebook.com/animabing',
-      icon: '📘',
+      url: 'https://facebook.com/animebing',
+      isActive: true,
+      icon: 'facebook',
       displayName: 'Facebook'
     },
     { 
       platform: 'instagram', 
-      url: 'https://instagram.com/animabing',
-      icon: '📷',
+      url: 'https://instagram.com/animebing',
+      isActive: true,
+      icon: 'instagram',
       displayName: 'Instagram'
     },
     { 
       platform: 'telegram', 
-      url: 'https://t.me/animabing',
-      icon: '📢',
+      url: 'https://t.me/animebing',
+      isActive: true,
+      icon: 'telegram',
       displayName: 'Telegram'
+    },
+    { 
+      platform: 'twitter', 
+      url: 'https://twitter.com/animebing',
+      isActive: false,
+      icon: 'twitter',
+      displayName: 'Twitter'
+    },
+    { 
+      platform: 'youtube', 
+      url: 'https://youtube.com/c/animebing',
+      isActive: false,
+      icon: 'youtube',
+      displayName: 'YouTube'
     }
   ];
 
-  for (const link of defaultLinks) {
-    const existing = await this.findOne({ platform: link.platform });
-    if (!existing) {
-      await this.create(link);
-      console.log(`✅ Created default social link: ${link.platform}`);
+  try {
+    for (const link of defaultLinks) {
+      const existing = await this.findOne({ platform: link.platform });
+      if (!existing) {
+        await this.create(link);
+        console.log(`✅ Created default social link: ${link.platform}`);
+      }
     }
+    console.log('✅ Social media links initialized');
+  } catch (error) {
+    console.error('❌ Error initializing social links:', error);
   }
 };
 
-module.exports = mongoose.models.SocialMedia || mongoose.model('SocialMedia', socialMediaSchema);
+const SocialMedia = mongoose.model('SocialMedia', socialMediaSchema);
 
-// ✅ INITIALIZE DEFAULT LINKS
-const SocialMedia = module.exports;
-SocialMedia.initDefaultLinks().catch(console.error);
+// ✅ Initialize when model is loaded (only once)
+let initialized = false;
+if (!initialized) {
+  SocialMedia.initDefaultLinks();
+  initialized = true;
+}
+
+module.exports = SocialMedia;
