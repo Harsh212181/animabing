@@ -289,9 +289,6 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// ❌ REMOVED: Duplicate /api/social route (line 141 in original)
-// This was causing conflict with socialRoutes
-
 // ✅ App downloads API
 app.get('/api/app-downloads', async (req, res) => {
   try {
@@ -523,6 +520,65 @@ app.get('/api/emergency/reset-social', async (req, res) => {
   }
 });
 
+// ✅ EMERGENCY: FIX SOCIAL MEDIA LINKS WITH CORRECT URLS (NEW ROUTE)
+app.get('/api/emergency/fix-social-urls', async (req, res) => {
+  try {
+    const SocialMedia = require('./models/SocialMedia.cjs');
+    
+    console.log('🆕 EMERGENCY: Fixing social media links with correct URLs...');
+    
+    // Delete all existing social media links
+    await SocialMedia.deleteMany({});
+    
+    // CORRECT LINKS with proper formatting
+    const correctLinks = [
+      {
+        platform: 'instagram',
+        url: 'https://instagram.com/animebingofficial', // Removed ?igsh parameter
+        isActive: true,
+        icon: 'instagram',
+        displayName: 'Instagram'
+      },
+      {
+        platform: 'telegram', 
+        url: 'https://t.me/animebingofficial', // Fixed typo: animebingofficile -> animebingofficial
+        isActive: true,
+        icon: 'telegram',
+        displayName: 'Telegram'
+      },
+      {
+        platform: 'facebook',
+        url: 'https://facebook.com/animebingofficial', // Proper Facebook page link
+        isActive: true,
+        icon: 'facebook',
+        displayName: 'Facebook'
+      }
+    ];
+    
+    // Insert the correct links
+    await SocialMedia.insertMany(correctLinks);
+    console.log('✅ Inserted CORRECTED social media links');
+    
+    // Verify
+    const allLinks = await SocialMedia.find().sort({ platform: 1 });
+    
+    res.json({
+      success: true,
+      message: '✅ EMERGENCY: Social media links fixed with CORRECT URLs!',
+      note: 'Instagram: Removed ?igsh parameter, Telegram: Fixed typo, Facebook: Changed to page link',
+      links: allLinks,
+      instructions: 'Now refresh your website and test the social media icons. They will now open correct profiles.'
+    });
+    
+  } catch (error) {
+    console.error('❌ Emergency social media fix error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // ============================================
 // ✅ ROOT ROUTE - AD-FREE VERSION WITH SOCIAL FIX
 // ============================================
@@ -607,6 +663,19 @@ app.get('/', (req, res) => {
           color: #4CAF50;
           font-weight: bold;
         }
+        .fix-btn {
+          background: #EF4444;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 6px;
+          text-decoration: none;
+          font-size: 16px;
+          margin-top: 10px;
+          display: inline-block;
+        }
+        .fix-btn:hover {
+          background: #DC2626;
+        }
       </style>
     </head>
     <body>
@@ -622,12 +691,24 @@ app.get('/', (req, res) => {
           <div class="links">
             <a href="/api/social" class="btn" target="_blank">Check Social Links</a>
             <a href="/api/debug/social" class="btn" target="_blank">Debug Social Links</a>
-            <a href="/api/emergency/reset-social" class="btn" target="_blank">Reset Social Links</a>
+            <a href="/api/emergency/reset-social" class="btn" target="_blank">Reset to Defaults</a>
           </div>
         </div>
         
         <div class="emergency-info">
-          <h3>🔧 Emergency Fixes:</h3>
+          <h3>🚨 IMMEDIATE FIX FOR SOCIAL MEDIA LINKS:</h3>
+          <p><strong>Click below to fix ALL social media links instantly:</strong></p>
+          <p><a href="/api/emergency/fix-social-urls" class="fix-btn" target="_blank">CLICK HERE TO FIX SOCIAL LINKS</a></p>
+          <p>This will set:</p>
+          <ul>
+            <li>Instagram: https://instagram.com/animebingofficial</li>
+            <li>Telegram: https://t.me/animebingofficial (typo fixed)</li>
+            <li>Facebook: https://facebook.com/animebingofficial</li>
+          </ul>
+        </div>
+        
+        <div class="emergency-info">
+          <h3>🔧 Other Emergency Fixes:</h3>
           <p><strong>Featured Anime Fix:</strong> <a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a></p>
           <p><strong>Admin Reset:</strong> <a href="/api/admin/emergency-reset" target="_blank">Emergency Admin Reset</a></p>
           <p><strong>Debug Info:</strong> <a href="/api/debug/animes" target="_blank">View All Anime</a></p>
@@ -659,7 +740,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 API: https://animabing.onrender.com/api`);
   console.log(`✅ Social Media Routes: Fixed and Working`);
   console.log(`📱 Platforms: Facebook, Instagram, Telegram only`);
-  console.log(`🆕 Emergency Routes:`);
+  console.log(`🚨 EMERGENCY FIX ROUTE: /api/emergency/fix-social-urls`);
+  console.log(`🆕 Other Emergency Routes:`);
   console.log(`   - /api/emergency/reset-social (Reset social links)`);
   console.log(`   - /api/emergency/set-all-featured (Fix featured anime)`);
   console.log(`   - /api/admin/emergency-reset (Reset admin)`);
