@@ -1,10 +1,10 @@
- // models/SocialMedia.cjs - COMPLETE UPDATED VERSION
+  // models/SocialMedia.cjs - ONLY FACEBOOK, INSTAGRAM, TELEGRAM
 const mongoose = require('mongoose');
 
 const socialMediaSchema = new mongoose.Schema({
   platform: {
     type: String,
-    enum: ['facebook', 'instagram', 'telegram', 'twitter', 'youtube', 'whatsapp', 'discord'],
+    enum: ['facebook', 'instagram', 'telegram'], // ✅ Only these 3 platforms
     required: true,
     unique: true,
     lowercase: true
@@ -43,7 +43,7 @@ socialMediaSchema.pre('save', function(next) {
   next();
 });
 
-// ✅ Static method to initialize default links
+// ✅ Static method to initialize ONLY 3 default links
 socialMediaSchema.statics.initDefaultLinks = async function() {
   const defaultLinks = [
     { 
@@ -66,21 +66,8 @@ socialMediaSchema.statics.initDefaultLinks = async function() {
       isActive: true,
       icon: 'telegram',
       displayName: 'Telegram'
-    },
-    { 
-      platform: 'twitter', 
-      url: 'https://twitter.com/animebing',
-      isActive: false,
-      icon: 'twitter',
-      displayName: 'Twitter'
-    },
-    { 
-      platform: 'youtube', 
-      url: 'https://youtube.com/c/animebing',
-      isActive: false,
-      icon: 'youtube',
-      displayName: 'YouTube'
     }
+    // ❌ Twitter and YouTube removed as requested
   ];
 
   try {
@@ -91,7 +78,7 @@ socialMediaSchema.statics.initDefaultLinks = async function() {
         console.log(`✅ Created default social link: ${link.platform}`);
       }
     }
-    console.log('✅ Social media links initialized');
+    console.log('✅ Social media links initialized (Only Facebook, Instagram, Telegram)');
   } catch (error) {
     console.error('❌ Error initializing social links:', error);
   }
