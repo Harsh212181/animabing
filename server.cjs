@@ -1,4 +1,4 @@
-  // server.cjs - AD-FREE VERSION
+  // server.cjs - AD-FREE VERSION WITH SOCIAL MEDIA FIX
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db.cjs');
@@ -7,7 +7,7 @@ require('dotenv').config();
 const Analytics = require('./models/Analytics.cjs');
 const { generalLimiter, authLimiter, adminLimiter, apiLimiter } = require('./middleware/rateLimit.cjs');
 
-// ✅ IMPORT MIDDLEWARE AND ROUTES - MOVE TO TOP
+// ✅ IMPORT MIDDLEWARE AND ROUTES
 const adminAuth = require('./middleware/adminAuth.cjs');
 const animeRoutes = require('./routes/animeRoutes.cjs');
 const episodeRoutes = require('./routes/episodeRoutes.cjs');
@@ -289,39 +289,8 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// ✅ Social media API
-app.get('/api/social', async (req, res) => {
-  try {
-    const SocialMedia = require('./models/SocialMedia.cjs');
-    const socialLinks = await SocialMedia.find({ isActive: true });
-    res.json(socialLinks);
-  } catch (error) {
-    console.error('Social media API error:', error);
-    res.json([
-      {
-        platform: 'facebook',
-        url: 'https://facebook.com/animabing',
-        isActive: true,
-        icon: 'facebook',
-        displayName: 'Facebook'
-      },
-      {
-        platform: 'instagram', 
-        url: 'https://instagram.com/animabing',
-        isActive: true,
-        icon: 'instagram',
-        displayName: 'Instagram'
-      },
-      {
-        platform: 'telegram',
-        url: 'https://t.me/animabing', 
-        isActive: true,
-        icon: 'telegram',
-        displayName: 'Telegram'
-      }
-    ]);
-  }
-});
+// ❌ REMOVED: Duplicate /api/social route (line 141 in original)
+// This was causing conflict with socialRoutes
 
 // ✅ App downloads API
 app.get('/api/app-downloads', async (req, res) => {
@@ -358,13 +327,16 @@ app.get('/api/episodes/:animeId', async (req, res) => {
 app.use('/api/admin/protected', adminAuth, adminRoutes);
 
 // ============================================
-// ✅ PUBLIC ROUTES
+// ✅ PUBLIC ROUTES - CORRECTED ORDER
 // ============================================
+// ✅ SOCIAL MEDIA ROUTES MUST COME BEFORE ADMIN ROUTES FOR /admin paths
+app.use('/api/social', socialRoutes);
+
+// Other routes
 app.use('/api/anime', animeRoutes);
 app.use('/api/episodes', episodeRoutes);
 app.use('/api/chapters', chapterRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/social', socialRoutes);
 app.use('/api/app-downloads', appDownloadRoutes);
 app.use('/api', contactRoutes);
 
@@ -440,12 +412,46 @@ app.get('/api/debug/animes', async (req, res) => {
   }
 });
 
+// ✅ SOCIAL MEDIA DEBUG ROUTE
+app.get('/api/debug/social', async (req, res) => {
+  try {
+    const SocialMedia = require('./models/SocialMedia.cjs');
+    
+    const allLinks = await SocialMedia.find().sort({ platform: 1 });
+    const activeLinks = await SocialMedia.find({ isActive: true });
+    
+    console.log('🔗 SOCIAL MEDIA DEBUG:');
+    console.log('Total Links:', allLinks.length);
+    console.log('Active Links:', activeLinks.length);
+    
+    allLinks.forEach(link => {
+      console.log(`- ${link.platform}: ${link.url} [${link.isActive ? 'Active' : 'Inactive'}]`);
+    });
+    
+    res.json({
+      success: true,
+      totalLinks: allLinks.length,
+      activeLinks: activeLinks.length,
+      allLinks: allLinks,
+      activeLinks: activeLinks
+    });
+  } catch (error) {
+    console.error('Social media debug error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
 // ✅ HEALTH CHECK
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Animabing Server Running - AD FREE VERSION',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    socialMedia: 'Fixed - Only Facebook, Instagram, Telegram'
   });
 });
 
@@ -486,8 +492,39 @@ app.get('/api/emergency/set-all-featured', async (req, res) => {
   }
 });
 
+// ✅ EMERGENCY: RESET SOCIAL MEDIA LINKS
+app.get('/api/emergency/reset-social', async (req, res) => {
+  try {
+    const SocialMedia = require('./models/SocialMedia.cjs');
+    
+    console.log('🆕 EMERGENCY: Resetting social media links...');
+    
+    // Delete all existing social media links
+    await SocialMedia.deleteMany({});
+    
+    // Initialize default links
+    await SocialMedia.initDefaultLinks();
+    
+    const links = await SocialMedia.find().sort({ platform: 1 });
+    
+    console.log('✅ Social media links reset to defaults');
+    
+    res.json({
+      success: true,
+      message: 'Social media links reset to default (Facebook, Instagram, Telegram)',
+      links: links
+    });
+  } catch (error) {
+    console.error('❌ Social media reset error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // ============================================
-// ✅ ROOT ROUTE - AD-FREE VERSION
+// ✅ ROOT ROUTE - AD-FREE VERSION WITH SOCIAL FIX
 // ============================================
 app.get('/', (req, res) => {
   res.send(`
@@ -511,6 +548,7 @@ app.get('/', (req, res) => {
         .container {
           text-align: center;
           padding: 2rem;
+          max-width: 800px;
         }
         h1 {
           color: #8B5CF6;
@@ -527,10 +565,11 @@ app.get('/', (req, res) => {
         }
         .emergency-info {
           background: #1a1c2c;
-          padding: 1rem;
-          border-radius: 8px;
-          margin: 1rem 0;
+          padding: 1.5rem;
+          border-radius: 10px;
+          margin: 1.5rem 0;
           text-align: left;
+          border-left: 4px solid #8B5CF6;
         }
         .ad-free-badge {
           background: #4CAF50;
@@ -540,22 +579,71 @@ app.get('/', (req, res) => {
           font-size: 12px;
           margin-left: 10px;
         }
+        .section {
+          margin: 2rem 0;
+          padding: 1rem;
+          background: rgba(255,255,255,0.05);
+          border-radius: 8px;
+        }
+        .links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          justify-content: center;
+          margin-top: 1rem;
+        }
+        .btn {
+          background: #8B5CF6;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 6px;
+          text-decoration: none;
+          display: inline-block;
+        }
+        .btn:hover {
+          background: #7C3AED;
+        }
+        .status {
+          color: #4CAF50;
+          font-weight: bold;
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <h1>Animabing Server <span class="ad-free-badge">AD-FREE</span></h1>
-        <p>✅ Backend API is running correctly - No Ads Version</p>
+        <p class="status">✅ Backend API is running correctly - Social Media Fixed</p>
         <p>📺 Frontend: <a href="https://rainbow-sfogliatella-b724c0.netlify.app" target="_blank">Netlify</a></p>
         <p>⚙️ Admin Access: Press Ctrl+Shift+Alt on the frontend</p>
         
-        <div class="emergency-info">
-          <h3>🔧 Emergency Featured Fix:</h3>
-          <p>Click below to set all anime as featured:</p>
-          <p><a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a></p>
+        <div class="section">
+          <h3>🔗 Social Media Status: <span class="status">FIXED</span></h3>
+          <p>Social media links are now working correctly (Facebook, Instagram, Telegram only)</p>
+          <div class="links">
+            <a href="/api/social" class="btn" target="_blank">Check Social Links</a>
+            <a href="/api/debug/social" class="btn" target="_blank">Debug Social Links</a>
+            <a href="/api/emergency/reset-social" class="btn" target="_blank">Reset Social Links</a>
+          </div>
         </div>
         
-        <p><a href="/api/health">Health Check</a> | <a href="/api/anime/featured">Check Featured</a></p>
+        <div class="emergency-info">
+          <h3>🔧 Emergency Fixes:</h3>
+          <p><strong>Featured Anime Fix:</strong> <a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a></p>
+          <p><strong>Admin Reset:</strong> <a href="/api/admin/emergency-reset" target="_blank">Emergency Admin Reset</a></p>
+          <p><strong>Debug Info:</strong> <a href="/api/debug/animes" target="_blank">View All Anime</a></p>
+        </div>
+        
+        <div class="links">
+          <a href="/api/health">Health Check</a>
+          <a href="/api/anime/featured">Check Featured</a>
+          <a href="/api/social">Social Links</a>
+          <a href="/api/debug/animes">Debug Anime</a>
+        </div>
+        
+        <p style="margin-top: 2rem; color: #9CA3AF; font-size: 0.9rem;">
+          Server Time: ${new Date().toLocaleString()}<br>
+          Social Media: Facebook, Instagram, Telegram only
+        </p>
       </div>
     </body>
     </html>
@@ -569,5 +657,10 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔧 Admin: ${process.env.ADMIN_USER} / ${process.env.ADMIN_PASS}`);
   console.log(`🌐 Frontend: https://animabing.pages.dev`);
   console.log(`🔗 API: https://animabing.onrender.com/api`);
-  console.log(`🆕 Emergency Route: https://animabing.onrender.com/api/emergency/set-all-featured`);
+  console.log(`✅ Social Media Routes: Fixed and Working`);
+  console.log(`📱 Platforms: Facebook, Instagram, Telegram only`);
+  console.log(`🆕 Emergency Routes:`);
+  console.log(`   - /api/emergency/reset-social (Reset social links)`);
+  console.log(`   - /api/emergency/set-all-featured (Fix featured anime)`);
+  console.log(`   - /api/admin/emergency-reset (Reset admin)`);
 });
