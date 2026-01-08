@@ -1,6 +1,7 @@
-  // App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS
+ // App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS + GA4 ANALYTICS FIX
 // ✅ ALL ADS-RELATED CODE REMOVED
 // ✅ SECRET CODE TYPING LOGS REMOVED
+// ✅ GA4 ANALYTICS ADDED - UTM FIXED
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ import DMCA from './components/DMCA';
 import TermsAndConditions from './components/TermsAndConditions';
 import Contact from './components/Contact';
 import { getAllAnime } from './services/animeService';
+import AnalyticsTracker from './src/components/AnalyticsTracker'; // ✅ GA4 ANALYTICS IMPORT
 
 type ViewType = 'home' | 'list' | 'detail';
 type AdminViewType = 'login' | 'dashboard';
@@ -190,7 +192,7 @@ const MainApp: React.FC = () => {
   }, [location.search, searchParams]);
 
   useEffect(() => {
-    // ✅ URL से state update करें (जब कोई URL सीधे ओपन करे)
+    // ✅ URL se state update karein (jab koi URL seedhe open kare)
     const urlContentType = searchParams.get('contentType') as ContentTypeFilter | null;
     const urlFilter = searchParams.get('filter') as FilterType | null;
     const urlSearchQuery = searchParams.get('search') || '';
@@ -328,7 +330,7 @@ const MainApp: React.FC = () => {
     localStorage.removeItem('adminUsername');
     setIsAdminAuthenticated(false);
     setAdminView(null);
-    // Home page पर redirect करें
+    // Home page par redirect karein
     window.location.href = window.location.origin + '/';
     setShowAdminButton(false);
   };
@@ -424,7 +426,10 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="bg-[#0a0c1c] text-white min-h-screen font-sans">
-      {/* ✅ Header को सभी 5 props दें - लाल रेखा चली जाएगी */}
+      {/* ✅ GA4 ANALYTICS TRACKER - UTM FIX KA MANTRA */}
+      <AnalyticsTracker />
+      
+      {/* ✅ Header ko sabhi 5 props dein */}
       <Header 
         onSearchChange={handleSearchChange} 
         searchQuery={searchQuery}
