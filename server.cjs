@@ -1,4 +1,4 @@
-  // server.cjs - AD-FREE VERSION WITH SOCIAL MEDIA FIX
+// server.cjs - UPDATED WITH DYNAMIC SITEMAP GENERATOR
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db.cjs');
@@ -41,6 +41,226 @@ app.use((req, res, next) => {
     Analytics.recordVisit(req, 0);
   }
   next();
+});
+
+// ✅ DYNAMIC SITEMAP GENERATOR
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    console.log('🗺️ Generating dynamic sitemap.xml...');
+    
+    const Anime = require('./models/Anime.cjs');
+    
+    // Get all anime with SEO fields
+    const allAnime = await Anime.find({})
+      .select('slug seoTitle thumbnail updatedAt contentType subDubStatus releaseYear')
+      .lean();
+    
+    // Start building XML
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n`;
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // ✅ STATIC PAGES
+    const staticPages = [
+      { url: 'https://animebing.in', priority: '1.0', changefreq: 'daily' },
+      { url: 'https://animebing.in/anime', priority: '0.9', changefreq: 'daily' },
+      { url: 'https://animebing.in/anime?filter=Hindi%20Dub', priority: '0.8', changefreq: 'daily' },
+      { url: 'https://animebing.in/anime?filter=Hindi%20Sub', priority: '0.8', changefreq: 'daily' },
+      { url: 'https://animebing.in/anime?filter=English%20Sub', priority: '0.8', changefreq: 'daily' },
+      { url: 'https://animebing.in/privacy', priority: '0.5', changefreq: 'monthly' },
+      { url: 'https://animebing.in/terms', priority: '0.5', changefreq: 'monthly' },
+      { url: 'https://animebing.in/dmca', priority: '0.5', changefreq: 'monthly' },
+      { url: 'https://animebing.in/contact', priority: '0.5', changefreq: 'monthly' }
+    ];
+    
+    // Add static pages
+    staticPages.forEach(page => {
+      xml += `  <url>
+    <loc>${page.url}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>\n`;
+    });
+    
+    // ✅ SEARCH KEYWORD PAGES (For SEO)
+    const searchKeywords = [
+      'naruto',
+      'one%20piece',
+      'dragon%20ball',
+      'demon%20slayer',
+      'attack%20on%20titan',
+      'anime%20in%20hindi',
+      'anime%20in%20hindi%20dub',
+      'anime%20in%20hindi%20sub',
+      'anime%20in%20english%20sub',
+      'watch%20anime%20online',
+      'free%20anime%20download',
+      'anime%20streaming'
+    ];
+    
+    searchKeywords.forEach(keyword => {
+      xml += `  <url>
+    <loc>https://animebing.in/?search=${keyword}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+    });
+    
+    // ✅ DYNAMIC ANIME PAGES
+    console.log(`📺 Adding ${allAnime.length} anime to sitemap...`);
+    
+    allAnime.forEach(anime => {
+      if (anime.slug) {
+        const lastmod = anime.updatedAt ? 
+          new Date(anime.updatedAt).toISOString().split('T')[0] : 
+          currentDate;
+        
+        xml += `  <url>
+    <loc>https://animebing.in/anime/${anime.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>\n`;
+        
+        // Add image if available
+        if (anime.thumbnail) {
+          xml += `    <image:image>
+      <image:loc>${anime.thumbnail}</image:loc>
+      <image:title><![CDATA[${anime.seoTitle || anime.title}]]></image:title>
+    </image:image>\n`;
+        }
+        
+        // Add video info if it's a movie or series
+        if (anime.contentType === 'Movie') {
+          xml += `    <video:video>
+      <video:title><![CDATA[${anime.title}]]></video:title>
+      <video:description><![CDATA[Watch ${anime.title} online in ${anime.subDubStatus}]]></video:description>
+      <video:thumbnail_loc>${anime.thumbnail || ''}</video:thumbnail_loc>
+      <video:release_date>${anime.releaseYear || currentDate.split('-')[0]}-01-01</video:release_date>
+    </video:video>\n`;
+        }
+        
+        xml += `  </url>\n`;
+      }
+    });
+    
+    xml += '</urlset>';
+    
+    // Set headers and send response
+    res.header('Content-Type', 'application/xml');
+    res.header('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.send(xml);
+    
+    console.log(`✅ Sitemap generated successfully with ${allAnime.length + staticPages.length + searchKeywords.length} URLs`);
+    
+  } catch (error) {
+    console.error('❌ Error generating sitemap:', error);
+    
+    // Fallback to static sitemap if dynamic fails
+    const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://animebing.in</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://animebing.in/anime</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>`;
+    
+    res.header('Content-Type', 'application/xml');
+    res.send(fallbackSitemap);
+  }
+});
+
+// ✅ ROBOTS.TXT (For SEO)
+app.get('/robots.txt', (req, res) => {
+  const robotsTxt = `User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/admin/
+Sitemap: https://animebing.in/sitemap.xml
+
+# SEO Instructions for Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+User-agent: SemrushBot
+Disallow: /
+
+# SEO Sitemaps
+Sitemap: https://animebing.in/sitemap.xml
+Sitemap: https://animebing.in/rss.xml`;
+  
+  res.header('Content-Type', 'text/plain');
+  res.send(robotsTxt);
+});
+
+// ✅ RSS FEED FOR SEO
+app.get('/rss.xml', async (req, res) => {
+  try {
+    const Anime = require('./models/Anime.cjs');
+    
+    const recentAnime = await Anime.find({})
+      .select('title description thumbnail slug seoDescription updatedAt')
+      .sort({ updatedAt: -1 })
+      .limit(20)
+      .lean();
+    
+    const currentDate = new Date().toUTCString();
+    
+    let rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AnimeBing - Latest Anime Updates</title>
+    <link>https://animebing.in</link>
+    <description>Watch anime online in Hindi and English. Latest anime episodes and movies.</description>
+    <language>en-us</language>
+    <pubDate>${currentDate}</pubDate>
+    <lastBuildDate>${currentDate}</lastBuildDate>
+    <atom:link href="https://animebing.in/rss.xml" rel="self" type="application/rss+xml" />\n`;
+    
+    recentAnime.forEach(anime => {
+      const pubDate = anime.updatedAt ? new Date(anime.updatedAt).toUTCString() : currentDate;
+      const description = anime.seoDescription || anime.description || `Watch ${anime.title} online`;
+      
+      rss += `    <item>
+      <title><![CDATA[${anime.title}]]></title>
+      <link>https://animebing.in/anime/${anime.slug || anime._id}</link>
+      <guid>https://animebing.in/anime/${anime.slug || anime._id}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <description><![CDATA[${description}]]></description>
+      <enclosure url="${anime.thumbnail || ''}" type="image/jpeg" />
+    </item>\n`;
+    });
+    
+    rss += `  </channel>
+</rss>`;
+    
+    res.header('Content-Type', 'application/xml');
+    res.send(rss);
+    
+  } catch (error) {
+    console.error('Error generating RSS feed:', error);
+    res.status(500).send('Error generating RSS feed');
+  }
 });
 
 // ✅ FIXED ADMIN CREATION FUNCTION
@@ -441,14 +661,20 @@ app.get('/api/debug/social', async (req, res) => {
   }
 });
 
-// ✅ HEALTH CHECK
+// ✅ HEALTH CHECK WITH SEO INFO
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Animabing Server Running - AD FREE VERSION',
+    message: 'Animabing Server Running - SEO OPTIMIZED',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    socialMedia: 'Fixed - Only Facebook, Instagram, Telegram'
+    seoFeatures: {
+      sitemap: 'https://animebing.in/sitemap.xml',
+      robots: 'https://animebing.in/robots.txt',
+      rssFeed: 'https://animebing.in/rss.xml',
+      dynamicUrls: 'Enabled',
+      structuredData: 'Enabled'
+    }
   });
 });
 
@@ -580,7 +806,7 @@ app.get('/api/emergency/fix-social-urls', async (req, res) => {
 });
 
 // ============================================
-// ✅ ROOT ROUTE - AD-FREE VERSION WITH SOCIAL FIX
+// ✅ ROOT ROUTE - SEO OPTIMIZED VERSION
 // ============================================
 app.get('/', (req, res) => {
   res.send(`
@@ -589,7 +815,25 @@ app.get('/', (req, res) => {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Animabing - Anime & Movies</title>
+      <title>AnimeBing - Watch Anime Online in Hindi & English | Free Anime Streaming</title>
+      <meta name="description" content="Watch anime online for free in Hindi Dub, Hindi Sub, and English Sub. HD quality streaming and downloads. Latest anime episodes and movies on AnimeBing.">
+      <meta name="keywords" content="watch anime online, hindi anime, english anime, anime in hindi, anime in english, free anime streaming, anime download, anime binge">
+      <meta name="robots" content="index, follow">
+      <link rel="canonical" href="https://animebing.in">
+      
+      <!-- Open Graph -->
+      <meta property="og:title" content="AnimeBing - Watch Anime Online in Hindi & English">
+      <meta property="og:description" content="Watch anime online for free in Hindi and English. HD quality streaming and downloads.">
+      <meta property="og:image" content="/AnimeBinglogo.jpg">
+      <meta property="og:url" content="https://animebing.in">
+      <meta property="og:type" content="website">
+      
+      <!-- Twitter Card -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="AnimeBing - Watch Anime Online in Hindi & English">
+      <meta name="twitter:description" content="Watch anime online for free in Hindi and English. HD quality streaming and downloads.">
+      <meta name="twitter:image" content="/AnimeBinglogo.jpg">
+      
       <style>
         body {
           background: #0a0c1c;
@@ -619,15 +863,7 @@ app.get('/', (req, res) => {
         a:hover {
           text-decoration: underline;
         }
-        .emergency-info {
-          background: #1a1c2c;
-          padding: 1.5rem;
-          border-radius: 10px;
-          margin: 1.5rem 0;
-          text-align: left;
-          border-left: 4px solid #8B5CF6;
-        }
-        .ad-free-badge {
+        .seo-badge {
           background: #4CAF50;
           color: white;
           padding: 5px 10px;
@@ -640,6 +876,7 @@ app.get('/', (req, res) => {
           padding: 1rem;
           background: rgba(255,255,255,0.05);
           border-radius: 8px;
+          text-align: left;
         }
         .links {
           display: flex;
@@ -663,69 +900,103 @@ app.get('/', (req, res) => {
           color: #4CAF50;
           font-weight: bold;
         }
-        .fix-btn {
-          background: #EF4444;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 6px;
-          text-decoration: none;
-          font-size: 16px;
-          margin-top: 10px;
-          display: inline-block;
+        .seo-info {
+          background: #1a1c2c;
+          padding: 1.5rem;
+          border-radius: 10px;
+          margin: 1.5rem 0;
+          border-left: 4px solid #4CAF50;
         }
-        .fix-btn:hover {
-          background: #DC2626;
+        .seo-checklist {
+          list-style: none;
+          padding: 0;
+        }
+        .seo-checklist li {
+          margin: 8px 0;
+          padding-left: 24px;
+          position: relative;
+        }
+        .seo-checklist li:before {
+          content: "✅";
+          position: absolute;
+          left: 0;
+          color: #4CAF50;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>Animabing Server <span class="ad-free-badge">AD-FREE</span></h1>
-        <p class="status">✅ Backend API is running correctly - Social Media Fixed</p>
-        <p>📺 Frontend: <a href="https://rainbow-sfogliatella-b724c0.netlify.app" target="_blank">Netlify</a></p>
+        <h1>AnimeBing Server <span class="seo-badge">SEO OPTIMIZED</span></h1>
+        <p class="status">✅ Backend API is running correctly - SEO Ready for Google</p>
+        <p>📺 Frontend: <a href="https://animebing.in" target="_blank">AnimeBing.in</a></p>
         <p>⚙️ Admin Access: Press Ctrl+Shift+Alt on the frontend</p>
         
-        <div class="section">
-          <h3>🔗 Social Media Status: <span class="status">FIXED</span></h3>
-          <p>Social media links are now working correctly (Facebook, Instagram, Telegram only)</p>
-          <div class="links">
-            <a href="/api/social" class="btn" target="_blank">Check Social Links</a>
-            <a href="/api/debug/social" class="btn" target="_blank">Debug Social Links</a>
-            <a href="/api/emergency/reset-social" class="btn" target="_blank">Reset to Defaults</a>
-          </div>
-        </div>
-        
-        <div class="emergency-info">
-          <h3>🚨 IMMEDIATE FIX FOR SOCIAL MEDIA LINKS:</h3>
-          <p><strong>Click below to fix ALL social media links instantly:</strong></p>
-          <p><a href="/api/emergency/fix-social-urls" class="fix-btn" target="_blank">CLICK HERE TO FIX SOCIAL LINKS</a></p>
-          <p>This will set:</p>
-          <ul>
-            <li>Instagram: https://instagram.com/animebingofficial</li>
-            <li>Telegram: https://t.me/animebingofficial (typo fixed)</li>
-            <li>Facebook: https://facebook.com/animebingofficial</li>
+        <div class="seo-info">
+          <h3>🔍 SEO Features Enabled:</h3>
+          <ul class="seo-checklist">
+            <li>Dynamic Sitemap: <a href="/sitemap.xml" target="_blank">/sitemap.xml</a></li>
+            <li>Robots.txt: <a href="/robots.txt" target="_blank">/robots.txt</a></li>
+            <li>RSS Feed: <a href="/rss.xml" target="_blank">/rss.xml</a></li>
+            <li>Dynamic URLs with slugs</li>
+            <li>Structured Data (JSON-LD)</li>
+            <li>Meta Tags on all pages</li>
+            <li>Open Graph & Twitter Cards</li>
+            <li>Admin SEO Control Panel</li>
           </ul>
         </div>
         
-        <div class="emergency-info">
-          <h3>🔧 Other Emergency Fixes:</h3>
-          <p><strong>Featured Anime Fix:</strong> <a href="/api/emergency/set-all-featured" target="_blank">Set All Anime as Featured</a></p>
-          <p><strong>Admin Reset:</strong> <a href="/api/admin/emergency-reset" target="_blank">Emergency Admin Reset</a></p>
-          <p><strong>Debug Info:</strong> <a href="/api/debug/animes" target="_blank">View All Anime</a></p>
+        <div class="section">
+          <h3>🚀 Ready for Google Search Console:</h3>
+          <p><strong>Steps to submit to Google:</strong></p>
+          <ol>
+            <li>Go to <a href="https://search.google.com/search-console" target="_blank">Google Search Console</a></li>
+            <li>Add property: <code>https://animebing.in</code></li>
+            <li>Verify ownership (HTML tag method recommended)</li>
+            <li>Submit sitemap: <code>https://animebing.in/sitemap.xml</code></li>
+            <li>Wait 24-48 hours for indexing</li>
+          </ol>
         </div>
         
         <div class="links">
-          <a href="/api/health">Health Check</a>
-          <a href="/api/anime/featured">Check Featured</a>
-          <a href="/api/social">Social Links</a>
-          <a href="/api/debug/animes">Debug Anime</a>
+          <a href="/api/health" class="btn">Health Check</a>
+          <a href="/sitemap.xml" class="btn" target="_blank">View Sitemap</a>
+          <a href="/robots.txt" class="btn" target="_blank">View Robots.txt</a>
+          <a href="/api/anime/featured" class="btn">Check Featured Anime</a>
+          <a href="/api/debug/animes" class="btn">Debug Anime</a>
         </div>
         
         <p style="margin-top: 2rem; color: #9CA3AF; font-size: 0.9rem;">
           Server Time: ${new Date().toLocaleString()}<br>
-          Social Media: Facebook, Instagram, Telegram only
+          SEO Status: Complete - Ready for Google Indexing<br>
+          Sitemap URLs: ${(() => {
+            // Estimate URLs count
+            const Anime = require('./models/Anime.cjs');
+            Anime.countDocuments({}, (err, count) => {
+              if(!err) {
+                const totalUrls = count + 20 + 12; // anime + static + search pages
+                console.log(`Estimated sitemap URLs: ${totalUrls}`);
+              }
+            });
+            return "Calculating...";
+          })()}
         </p>
       </div>
+      
+      <!-- JSON-LD Structured Data -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "AnimeBing",
+        "url": "https://animebing.in",
+        "description": "Watch anime online for free in Hindi and English. HD quality streaming and downloads.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://animebing.in/?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+      </script>
     </body>
     </html>
   `);
@@ -734,15 +1005,16 @@ app.get('/', (req, res) => {
 // ✅ START SERVER
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT} - AD FREE VERSION`);
+  console.log(`🚀 Server running on port ${PORT} - SEO OPTIMIZED`);
   console.log(`🔧 Admin: ${process.env.ADMIN_USER} / ${process.env.ADMIN_PASS}`);
-  console.log(`🌐 Frontend: https://animabing.pages.dev`);
-  console.log(`🔗 API: https://animabing.onrender.com/api`);
-  console.log(`✅ Social Media Routes: Fixed and Working`);
-  console.log(`📱 Platforms: Facebook, Instagram, Telegram only`);
-  console.log(`🚨 EMERGENCY FIX ROUTE: /api/emergency/fix-social-urls`);
-  console.log(`🆕 Other Emergency Routes:`);
-  console.log(`   - /api/emergency/reset-social (Reset social links)`);
-  console.log(`   - /api/emergency/set-all-featured (Fix featured anime)`);
-  console.log(`   - /api/admin/emergency-reset (Reset admin)`);
+  console.log(`🌐 Frontend: https://animebing.in`);
+  console.log(`🗺️ Sitemap: https://animebing.in/sitemap.xml`);
+  console.log(`🤖 Robots: https://animebing.in/robots.txt`);
+  console.log(`📰 RSS Feed: https://animebing.in/rss.xml`);
+  console.log(`✅ SEO Features:`);
+  console.log(`   - Dynamic sitemap with anime pages`);
+  console.log(`   - Robots.txt for search engines`);
+  console.log(`   - RSS feed for updates`);
+  console.log(`   - Structured data for Google`);
+  console.log(`📈 Next Step: Submit sitemap to Google Search Console`);
 });

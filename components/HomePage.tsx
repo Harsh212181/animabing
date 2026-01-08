@@ -1,9 +1,11 @@
- import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+// components/HomePage.tsx - UPDATED WITH SEO
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
 import { SkeletonLoader } from './SkeletonLoader';
 import { getAnimePaginated, searchAnime, getFeaturedAnime } from '../services/animeService';
 import FeaturedAnimeCarousel from '../src/components/FeaturedAnimeCarousel';
+import SEO from '../src/components/SEO'; // ✅ SEO IMPORT ADDED
 
 interface Props {
   onAnimeSelect: (anime: Anime) => void;
@@ -61,6 +63,93 @@ const HomePage: React.FC<Props> = ({
   // Refs for tracking
   const isMounted = useRef(true);
   const lastSearchQuery = useRef(searchQuery);
+
+  // ✅ GENERATE SEO DATA FOR HOMEPAGE
+  const getSEOData = () => {
+    let title = 'Watch Anime Online in Hindi & English | AnimeBing';
+    let description = 'AnimeBing - Watch anime online for free in Hindi Dub, Hindi Sub, and English Sub. HD quality streaming and downloads. Latest anime episodes and movies.';
+    let keywords = 'watch anime online, hindi anime, english anime, anime in hindi, anime in english, free anime streaming, anime download, anime binge';
+    
+    // Customize based on search
+    if (searchQuery.trim()) {
+      title = `Search "${searchQuery}" - Watch Anime Online | AnimeBing`;
+      description = `Search results for "${searchQuery}". Watch anime online in Hindi and English. Free HD streaming.`;
+      keywords = `${searchQuery} anime, ${searchQuery} hindi dub, ${searchQuery} english sub, watch ${searchQuery} online`;
+    }
+    
+    // Customize based on filter
+    else if (localFilter !== 'All') {
+      if (localFilter === 'Hindi Dub') {
+        title = 'Watch Hindi Dubbed Anime Online | AnimeBing';
+        description = 'Watch Hindi dubbed anime online for free. All latest anime in Hindi dub with HD quality. Naruto, One Piece, Demon Slayer and more.';
+        keywords = 'hindi dubbed anime, anime in hindi dub, watch hindi dub anime online, naruto hindi dub, one piece hindi dub, free hindi anime';
+      } else if (localFilter === 'Hindi Sub') {
+        title = 'Watch Hindi Subbed Anime Online | AnimeBing';
+        description = 'Watch Hindi subbed anime online for free. Latest anime with Hindi subtitles in HD quality.';
+        keywords = 'hindi subbed anime, anime in hindi sub, watch hindi sub anime online, anime with hindi subtitles';
+      } else if (localFilter === 'English Sub') {
+        title = 'Watch English Subbed Anime Online | AnimeBing';
+        description = 'Watch English subbed anime online for free. Latest anime with English subtitles in HD quality.';
+        keywords = 'english subbed anime, anime in english sub, watch english sub anime online, anime with english subtitles';
+      }
+    }
+    
+    // Customize based on content type
+    else if (contentType !== 'All') {
+      if (contentType === 'Movie') {
+        title = 'Watch Anime Movies Online | AnimeBing';
+        description = 'Watch anime movies online for free in Hindi and English. Full length anime movies in HD quality.';
+        keywords = 'anime movies, watch anime movies online, hindi anime movies, english anime movies';
+      } else if (contentType === 'Manga') {
+        title = 'Read Manga Online | AnimeBing';
+        description = 'Read manga online for free. Latest manga chapters available.';
+        keywords = 'read manga online, manga, free manga, manga chapters';
+      }
+    }
+    
+    // Generate canonical URL
+    let canonicalUrl = 'https://animebing.in';
+    const params = new URLSearchParams();
+    
+    if (localFilter !== 'All') {
+      params.set('filter', localFilter);
+    }
+    if (contentType !== 'All') {
+      params.set('contentType', contentType);
+    }
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery.trim());
+    }
+    
+    if (params.toString()) {
+      canonicalUrl += `?${params.toString()}`;
+    }
+    
+    // Generate structured data for homepage
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AnimeBing",
+      "url": "https://animebing.in",
+      "description": "Watch anime online for free in Hindi and English. HD quality streaming and downloads.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://animebing.in?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    };
+    
+    return {
+      title,
+      description,
+      keywords,
+      canonicalUrl,
+      structuredData,
+      ogUrl: window.location.href
+    };
+  };
+
+  const seoData = getSEOData();
 
   // Border color ka interval - ab 20 seconds
   useEffect(() => {
@@ -293,366 +382,401 @@ const HomePage: React.FC<Props> = ({
   // Full Loader
   if (isLoading && animeList.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {Array.from({ length: 18 }).map((_, i) => (
-            <SkeletonLoader key={i} />
-          ))}
+      <>
+        {/* ✅ SEO FOR LOADING STATE */}
+        <SEO
+          title="Loading... | AnimeBing"
+          description="Watch anime online for free in Hindi and English. HD quality streaming and downloads."
+          keywords="anime, watch anime online, hindi anime, english anime"
+        />
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <SkeletonLoader key={i} />
+            ))}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Error
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="text-center bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700">
-          <p className="text-red-400 text-xl mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold"
-          >
-            Try Again
-          </button>
+      <>
+        {/* ✅ SEO FOR ERROR STATE */}
+        <SEO
+          title="Error Loading Anime | AnimeBing"
+          description="Watch anime online for free in Hindi and English. HD quality streaming and downloads."
+          keywords="anime, watch anime online, hindi anime, english anime"
+        />
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+          <div className="text-center bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700">
+            <p className="text-red-400 text-xl mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <style>{`
-        @keyframes subtle-glow {
-          0%, 100% {
-            opacity: 0.4;
-            filter: drop-shadow(0 0 10px currentColor);
-          }
-          50% {
-            opacity: 0.6;
-            filter: drop-shadow(0 0 25px currentColor);
-          }
-        }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%) rotate(45deg);
-          }
-          100% {
-            transform: translateX(100%) rotate(45deg);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-3px);
-          }
-        }
-        
-        @keyframes pulse-subtle {
-          0%, 100% {
-            opacity: 0.5;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.01);
-          }
-        }
-        
-        .enhanced-glow {
-          animation: pulse-subtle 3s ease-in-out infinite;
-        }
-        
-        .card-hover-effect:hover {
-          transform: translateY(-4px) scale(1.01);
-          transition: transform 0.3s ease-out;
-        }
-        
-        .shimmer-effect {
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.08),
-            transparent
-          );
-          animation: shimmer 3s infinite;
-        }
-        
-        @keyframes sparkle {
-          0%, 100% {
-            opacity: 0.2;
-            transform: scale(0.8);
-          }
-          50% {
-            opacity: 0.5;
-            transform: scale(1.1);
-          }
-        }
-        
-        .sparkle-effect {
-          animation: sparkle 2s ease-in-out infinite;
-        }
-        
-        /* Smooth transition for border color change */
-        .border-transition {
-          transition: background 0.8s ease-in-out;
-        }
-        
-        /* Custom scrollbar for filter buttons */
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+    <>
+      {/* ✅ SEO COMPONENT FOR HOMEPAGE */}
+      <SEO
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        canonicalUrl={seoData.canonicalUrl}
+        structuredData={seoData.structuredData}
+        ogUrl={seoData.ogUrl}
+      />
       
-      <div className="container mx-auto px-3 sm:px-4 py-4 lg:py-8">
+      {/* ✅ HIDDEN STRUCTURED DATA FOR SEO */}
+      <div className="hidden" itemScope itemType="https://schema.org/WebSite">
+        <meta itemProp="name" content="AnimeBing" />
+        <meta itemProp="description" content="Watch anime online for free in Hindi and English. HD quality streaming and downloads." />
+        <meta itemProp="url" content="https://animebing.in" />
+      </div>
+      
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <style>{`
+          @keyframes subtle-glow {
+            0%, 100% {
+              opacity: 0.4;
+              filter: drop-shadow(0 0 10px currentColor);
+            }
+            50% {
+              opacity: 0.6;
+              filter: drop-shadow(0 0 25px currentColor);
+            }
+          }
+          
+          @keyframes shimmer {
+            0% {
+              transform: translateX(-100%) rotate(45deg);
+            }
+            100% {
+              transform: translateX(100%) rotate(45deg);
+            }
+          }
+          
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-3px);
+            }
+          }
+          
+          @keyframes pulse-subtle {
+            0%, 100% {
+              opacity: 0.5;
+              transform: scale(1);
+            }
+            50% {
+              opacity: 0.7;
+              transform: scale(1.01);
+            }
+          }
+          
+          .enhanced-glow {
+            animation: pulse-subtle 3s ease-in-out infinite;
+          }
+          
+          .card-hover-effect:hover {
+            transform: translateY(-4px) scale(1.01);
+            transition: transform 0.3s ease-out;
+          }
+          
+          .shimmer-effect {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+              90deg,
+              transparent,
+              rgba(255, 255, 255, 0.08),
+              transparent
+            );
+            animation: shimmer 3s infinite;
+          }
+          
+          @keyframes sparkle {
+            0%, 100% {
+              opacity: 0.2;
+              transform: scale(0.8);
+            }
+            50% {
+              opacity: 0.5;
+              transform: scale(1.1);
+            }
+          }
+          
+          .sparkle-effect {
+            animation: sparkle 2s ease-in-out infinite;
+          }
+          
+          /* Smooth transition for border color change */
+          .border-transition {
+            transition: background 0.8s ease-in-out;
+          }
+          
+          /* Custom scrollbar for filter buttons */
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+        
+        <div className="container mx-auto px-3 sm:px-4 py-4 lg:py-8">
 
-        {/* Featured */}
-        {!searchQuery && !isSearching && featuredAnimes.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
-              Latest Content
-            </h2>
-            <FeaturedAnimeCarousel
-              featuredAnimes={featuredAnimes}
-              onAnimeSelect={onAnimeSelect}
-            />
-          </div>
-        )}
-
-        {/* Mobile Filter Buttons - Only visible on mobile */}
-        {!isSearching && (
-          <div className="mb-3 lg:hidden">
-            <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide px-1">
-              {filterButtons.map(btn => (
-                <button
-                  key={btn.key}
-                  onClick={() => handleFilterChange(btn.key)}
-                  className={`
-                    px-2.5 py-1.5 rounded text-[10px] sm:text-[11px] font-medium transition-all duration-200
-                    border whitespace-nowrap flex-shrink-0 min-w-[62px] sm:min-w-[68px]
-                    ${
-                      localFilter === btn.key
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg shadow-blue-500/40'
-                        : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
-                    }
-                  `}
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Result */}
-        {filteredAnime.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-md mx-auto border border-slate-700">
-              <div className="text-6xl mb-4">🔍</div>
-              <h2 className="text-2xl font-bold text-white mb-3">
-                {searchQuery ? 'No Results Found' : 'No Content'}
+          {/* Featured */}
+          {!searchQuery && !isSearching && featuredAnimes.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
+                Latest Content
               </h2>
-              {!searchQuery && localFilter !== 'All' && (
-                <button
-                  onClick={() => handleFilterChange('All')}
-                  className="mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/40 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300"
-                >
-                  Show All
-                </button>
-              )}
+              <FeaturedAnimeCarousel
+                featuredAnimes={featuredAnimes}
+                onAnimeSelect={onAnimeSelect}
+              />
             </div>
-          </div>
-        ) : (
-          <>
-            {/* Header - Clean design without count */}
-            <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-6">
-              {getAllContentHeading()}
-            </h2>
+          )}
 
-            {/* Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {filteredAnime.map((anime, i) => (
-                <div 
-                  key={`${getAnimeId(anime)}-${i}`}
-                  className="group relative"
-                >
-                  {/* Main Balanced Glow Effect */}
-                  <div 
-                    className={`absolute -inset-[1px] rounded-xl bg-gradient-to-br ${BORDER_COLORS[currentBorderColorIndex]} enhanced-glow border-transition`}
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}, ${GLOW_COLORS[currentBorderColorIndex][1]}, ${GLOW_COLORS[currentBorderColorIndex][2]})`,
-                    }}
-                  ></div>
-                  
-                  {/* Secondary Glow Layer - Reduced intensity */}
-                  <div 
-                    className="absolute -inset-0 rounded-xl opacity-30 blur-md transition-all duration-500 group-hover:opacity-50"
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}40, ${GLOW_COLORS[currentBorderColorIndex][1]}40, ${GLOW_COLORS[currentBorderColorIndex][2]}40)`,
-                    }}
-                  ></div>
-                  
-                  {/* Main Card Container */}
-                  <div className="card-hover-effect relative rounded-xl border border-slate-700/30 bg-gradient-to-b from-slate-900/95 to-slate-800/90 p-1.5 transition-all duration-300 overflow-hidden group-hover:border-transparent">
-                    
-                    {/* Subtle Shimmer Effect */}
-                    <div className="shimmer-effect"></div>
-                    
-                    {/* Subtle Inner Glow Effect */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500"
-                      style={{
-                        background: `radial-gradient(circle at center, ${GLOW_COLORS[currentBorderColorIndex][1]}20 0%, transparent 70%)`,
-                      }}
-                    ></div>
-                    
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-40 group-hover:opacity-30 transition-opacity duration-300"></div>
-                    
-                    {/* Subtle sparkle particles */}
-                    <div className="absolute top-2 right-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-30"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][0],
-                        boxShadow: `0 0 5px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
-                        animationDelay: '0.2s'
-                      }}
-                    ></div>
-                    <div className="absolute bottom-2 left-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-30"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][1],
-                        boxShadow: `0 0 5px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
-                        animationDelay: '0.5s'
-                      }}
-                    ></div>
-                    
-                    <AnimeCard
-                      anime={anime}
-                      onClick={onAnimeSelect}
-                      index={i}
-                      showStatus={true}
-                    />
-                    
-                    {/* Subtle Corner Accents */}
-                    <div 
-                      className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l rounded-tl-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
-                      style={{
-                        borderColor: GLOW_COLORS[currentBorderColorIndex][0],
-                      }}
-                    ></div>
-                    <div 
-                      className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r rounded-tr-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
-                      style={{
-                        borderColor: GLOW_COLORS[currentBorderColorIndex][1],
-                        animationDelay: '0.3s'
-                      }}
-                    ></div>
-                    <div 
-                      className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l rounded-bl-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
-                      style={{
-                        borderColor: GLOW_COLORS[currentBorderColorIndex][2],
-                        animationDelay: '0.6s'
-                      }}
-                    ></div>
-                    <div 
-                      className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r rounded-br-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
-                      style={{
-                        borderColor: GLOW_COLORS[currentBorderColorIndex][0],
-                        animationDelay: '0.9s'
-                      }}
-                    ></div>
-                    
-                    {/* Subtle Floating Dots */}
-                    <div className="absolute -top-0.5 -left-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][0],
-                        boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
-                        animation: 'float 2s ease-in-out infinite',
-                      }}
-                    ></div>
-                    <div className="absolute -top-0.5 -right-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-75"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][1],
-                        boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
-                        animation: 'float 2s ease-in-out infinite 0.5s',
-                      }}
-                    ></div>
-                    <div className="absolute -bottom-0.5 -left-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-150"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][2],
-                        boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][2]}`,
-                        animation: 'float 2s ease-in-out infinite 1s',
-                      }}
-                    ></div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-225"
-                      style={{
-                        background: GLOW_COLORS[currentBorderColorIndex][0],
-                        boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
-                        animation: 'float 2s ease-in-out infinite 1.5s',
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Load More */}
-            {hasMore && !isSearching && !searchQuery && (
-              <div className="text-center mt-10">
-                <button
-                  onClick={loadMoreAnime}
-                  disabled={isLoadingMore}
-                  className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-purple-500/30 disabled:opacity-60 transition-all duration-300 group"
-                  style={{
-                    animation: 'pulse-subtle 4s ease-in-out infinite'
-                  }}
-                >
-                  {/* Button Glow Effect */}
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300"></span>
-                  <span className="relative z-10">
-                    {isLoadingMore ? (
-                      <>
-                        <span className="inline-block animate-spin mr-2">⟳</span>
-                        Loading...
-                      </>
-                    ) : (
-                      'Load More'
-                    )}
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {isLoadingMore && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-6">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div 
-                    key={`skeleton-${i}`} 
-                    className="relative rounded-xl border border-slate-700/40 p-1.5 bg-gradient-to-b from-slate-900/80 to-slate-800/70 overflow-hidden"
+          {/* Mobile Filter Buttons - Only visible on mobile */}
+          {!isSearching && (
+            <div className="mb-3 lg:hidden">
+              <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1.5 scrollbar-hide px-1">
+                {filterButtons.map(btn => (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleFilterChange(btn.key)}
+                    className={`
+                      px-2.5 py-1.5 rounded text-[10px] sm:text-[11px] font-medium transition-all duration-200
+                      border whitespace-nowrap flex-shrink-0 min-w-[62px] sm:min-w-[68px]
+                      ${
+                        localFilter === btn.key
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg shadow-blue-500/40'
+                          : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
+                      }
+                    `}
                   >
-                    {/* Skeleton shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-700/10 to-transparent animate-shimmer"></div>
-                    <SkeletonLoader />
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Result */}
+          {filteredAnime.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-md mx-auto border border-slate-700">
+                <div className="text-6xl mb-4">🔍</div>
+                <h2 className="text-2xl font-bold text-white mb-3">
+                  {searchQuery ? 'No Results Found' : 'No Content'}
+                </h2>
+                {!searchQuery && localFilter !== 'All' && (
+                  <button
+                    onClick={() => handleFilterChange('All')}
+                    className="mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/40 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300"
+                  >
+                    Show All
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header - Clean design without count */}
+              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-6">
+                {getAllContentHeading()}
+              </h2>
+
+              {/* Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {filteredAnime.map((anime, i) => (
+                  <div 
+                    key={`${getAnimeId(anime)}-${i}`}
+                    className="group relative"
+                  >
+                    {/* Main Balanced Glow Effect */}
+                    <div 
+                      className={`absolute -inset-[1px] rounded-xl bg-gradient-to-br ${BORDER_COLORS[currentBorderColorIndex]} enhanced-glow border-transition`}
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}, ${GLOW_COLORS[currentBorderColorIndex][1]}, ${GLOW_COLORS[currentBorderColorIndex][2]})`,
+                      }}
+                    ></div>
+                    
+                    {/* Secondary Glow Layer - Reduced intensity */}
+                    <div 
+                      className="absolute -inset-0 rounded-xl opacity-30 blur-md transition-all duration-500 group-hover:opacity-50"
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, ${GLOW_COLORS[currentBorderColorIndex][0]}40, ${GLOW_COLORS[currentBorderColorIndex][1]}40, ${GLOW_COLORS[currentBorderColorIndex][2]}40)`,
+                      }}
+                    ></div>
+                    
+                    {/* Main Card Container */}
+                    <div className="card-hover-effect relative rounded-xl border border-slate-700/30 bg-gradient-to-b from-slate-900/95 to-slate-800/90 p-1.5 transition-all duration-300 overflow-hidden group-hover:border-transparent">
+                      
+                      {/* Subtle Shimmer Effect */}
+                      <div className="shimmer-effect"></div>
+                      
+                      {/* Subtle Inner Glow Effect */}
+                      <div 
+                        className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500"
+                        style={{
+                          background: `radial-gradient(circle at center, ${GLOW_COLORS[currentBorderColorIndex][1]}20 0%, transparent 70%)`,
+                        }}
+                      ></div>
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-40 group-hover:opacity-30 transition-opacity duration-300"></div>
+                      
+                      {/* Subtle sparkle particles */}
+                      <div className="absolute top-2 right-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-30"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][0],
+                          boxShadow: `0 0 5px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                          animationDelay: '0.2s'
+                        }}
+                      ></div>
+                      <div className="absolute bottom-2 left-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-30"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][1],
+                          boxShadow: `0 0 5px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
+                          animationDelay: '0.5s'
+                        }}
+                      ></div>
+                      
+                      <AnimeCard
+                        anime={anime}
+                        onClick={onAnimeSelect}
+                        index={i}
+                        showStatus={true}
+                      />
+                      
+                      {/* Subtle Corner Accents */}
+                      <div 
+                        className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l rounded-tl-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
+                        style={{
+                          borderColor: GLOW_COLORS[currentBorderColorIndex][0],
+                        }}
+                      ></div>
+                      <div 
+                        className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r rounded-tr-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
+                        style={{
+                          borderColor: GLOW_COLORS[currentBorderColorIndex][1],
+                          animationDelay: '0.3s'
+                        }}
+                      ></div>
+                      <div 
+                        className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l rounded-bl-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
+                        style={{
+                          borderColor: GLOW_COLORS[currentBorderColorIndex][2],
+                          animationDelay: '0.6s'
+                        }}
+                      ></div>
+                      <div 
+                        className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r rounded-br-xl opacity-0 group-hover:opacity-70 transition-all duration-300"
+                        style={{
+                          borderColor: GLOW_COLORS[currentBorderColorIndex][0],
+                          animationDelay: '0.9s'
+                        }}
+                      ></div>
+                      
+                      {/* Subtle Floating Dots */}
+                      <div className="absolute -top-0.5 -left-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][0],
+                          boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                          animation: 'float 2s ease-in-out infinite',
+                        }}
+                      ></div>
+                      <div className="absolute -top-0.5 -right-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-75"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][1],
+                          boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][1]}`,
+                          animation: 'float 2s ease-in-out infinite 0.5s',
+                        }}
+                      ></div>
+                      <div className="absolute -bottom-0.5 -left-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-150"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][2],
+                          boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][2]}`,
+                          animation: 'float 2s ease-in-out infinite 1s',
+                        }}
+                      ></div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-1 h-1 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-500 delay-225"
+                        style={{
+                          background: GLOW_COLORS[currentBorderColorIndex][0],
+                          boxShadow: `0 0 6px ${GLOW_COLORS[currentBorderColorIndex][0]}`,
+                          animation: 'float 2s ease-in-out infinite 1.5s',
+                        }}
+                      ></div>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-          </>
-        )}
+
+              {/* Load More */}
+              {hasMore && !isSearching && !searchQuery && (
+                <div className="text-center mt-10">
+                  <button
+                    onClick={loadMoreAnime}
+                    disabled={isLoadingMore}
+                    className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-purple-500/30 disabled:opacity-60 transition-all duration-300 group"
+                    style={{
+                      animation: 'pulse-subtle 4s ease-in-out infinite'
+                    }}
+                  >
+                    {/* Button Glow Effect */}
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300"></span>
+                    <span className="relative z-10">
+                      {isLoadingMore ? (
+                        <>
+                          <span className="inline-block animate-spin mr-2">⟳</span>
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {isLoadingMore && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div 
+                      key={`skeleton-${i}`} 
+                      className="relative rounded-xl border border-slate-700/40 p-1.5 bg-gradient-to-b from-slate-900/80 to-slate-800/70 overflow-hidden"
+                    >
+                      {/* Skeleton shimmer effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-700/10 to-transparent animate-shimmer"></div>
+                      <SkeletonLoader />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

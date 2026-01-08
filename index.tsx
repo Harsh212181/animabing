@@ -1,7 +1,8 @@
-// index.tsx — Optimized for Best Performance
-import "./src/index.css"; // ✅ ADDED THIS LINE - Tailwind CSS import
+ // index.tsx — Optimized for Best Performance
+import "./src/index.css"; // ✅ Tailwind CSS import
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async"; // ✅ IMPORT ADD
 import App from "./App";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 import Spinner from "./src/components/Spinner";
@@ -12,18 +13,20 @@ if (!rootElement) throw new Error("Root element not found");
 
 const root = ReactDOM.createRoot(rootElement);
 
-// 🚀 Non-blocking React render (improves TBT & FCP)
+// 🚀 Non-blocking React render
 const startApp = () => {
   root.render(
     <ErrorBoundary>
-      <Suspense fallback={<Spinner />}>
-        <App />
-      </Suspense>
+      <HelmetProvider> {/* ✅ WRAP WITH HelmetProvider */}
+        <Suspense fallback={<Spinner />}>
+          <App />
+        </Suspense>
+      </HelmetProvider>
     </ErrorBoundary>
   );
 };
 
-// ⏳ Load React AFTER the browser is idle → faster LCP
+// ⏳ Load React AFTER the browser is idle
 if ("requestIdleCallback" in window) {
   requestIdleCallback(startApp);
 } else {

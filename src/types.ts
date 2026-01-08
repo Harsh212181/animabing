@@ -1,4 +1,4 @@
-  // src/types.ts - UPDATED WITH MULTIPLE DOWNLOAD LINKS
+ // src/types.ts - UPDATED WITH SEO FIELDS
 export interface DownloadLink {
   name: string;
   url: string;
@@ -58,6 +58,19 @@ export interface Anime {
   featuredOrder?: number;
   createdAt?: string;
   updatedAt?: string;
+  
+  // ✅ SEO FIELDS ADDED HERE
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  slug?: string;
+  
+  // Additional optional fields that might exist
+  language?: string;
+  type?: string;
+  rating?: number;
+  views?: number;
+  episodeCount?: number;
 }
 
 export interface FeaturedAnime extends Anime {
@@ -97,4 +110,12 @@ export interface EditChapterData {
   downloadLinks?: DownloadLink[];
   secureFileReference?: string;
   session?: number;
+}
+
+// ✅ NEW: SEO Data interface
+export interface SEODetails {
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  slug: string;
 }

@@ -1,4 +1,4 @@
-  // src/components/admin/AnimeListTable.tsx - UPDATED WITH INLINE EDIT
+// src/components/admin/AnimeListTable.tsx - UPDATED WITH SEO EDITING
 import React, { useState, useEffect } from 'react';
 import type { Anime } from '../../types';
 import axios from 'axios';
@@ -24,7 +24,13 @@ const AnimeListTable: React.FC = () => {
     subDubStatus: 'Hindi Sub' as Anime['subDubStatus'],
     genreList: [''],
     status: 'Ongoing',
-    contentType: 'Anime' as 'Anime' | 'Movie' | 'Manga'
+    contentType: 'Anime' as 'Anime' | 'Movie' | 'Manga',
+    
+    // ✅ SEO FIELDS ADDED
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: '',
+    slug: ''
   });
 
   useEffect(() => {
@@ -32,7 +38,7 @@ const AnimeListTable: React.FC = () => {
   }, [statusFilter, contentTypeFilter]);
 
   useEffect(() => {
-    // Search functionality
+    // Search functionality - NOW INCLUDES SEO FIELDS
     if (searchQuery.trim() === '') {
       setFilteredAnimes(animes);
     } else {
@@ -42,7 +48,9 @@ const AnimeListTable: React.FC = () => {
           genre.toLowerCase().includes(searchQuery.toLowerCase())
         ) ||
         anime.subDubStatus.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        anime.contentType.toLowerCase().includes(searchQuery.toLowerCase())
+        anime.contentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (anime.seoTitle && anime.seoTitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (anime.seoKeywords && anime.seoKeywords.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       setFilteredAnimes(filtered);
     }
@@ -60,7 +68,14 @@ const AnimeListTable: React.FC = () => {
       const { data } = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const animeData = data.map((a: any) => ({ ...a, id: a._id }));
+      const animeData = data.map((a: any) => ({ 
+        ...a, 
+        id: a._id,
+        seoTitle: a.seoTitle || '',
+        seoDescription: a.seoDescription || '',
+        seoKeywords: a.seoKeywords || '',
+        slug: a.slug || ''
+      }));
       setAnimes(animeData);
       setFilteredAnimes(animeData);
     } catch (err: any) {
@@ -93,12 +108,17 @@ const AnimeListTable: React.FC = () => {
       setEditForm({
         title: anime.title,
         description: anime.description || '',
-        thumbnail: anime.thumbnail,
-        releaseYear: anime.releaseYear,
+        thumbnail: anime.thumbnail || '',
+        releaseYear: anime.releaseYear || new Date().getFullYear(),
         subDubStatus: anime.subDubStatus,
-        genreList: anime.genreList,
+        genreList: anime.genreList || [''],
         status: anime.status || 'Ongoing',
-        contentType: anime.contentType || 'Anime'
+        contentType: anime.contentType || 'Anime',
+        // ✅ SEO FIELDS
+        seoTitle: anime.seoTitle || '',
+        seoDescription: anime.seoDescription || '',
+        seoKeywords: anime.seoKeywords || '',
+        slug: anime.slug || ''
       });
     }
   };
@@ -113,7 +133,7 @@ const AnimeListTable: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      alert('Anime updated successfully!');
+      alert('Anime updated successfully! SEO data has been saved.');
       setEditingAnimeId(null);
       fetchAnimes();
     } catch (err: any) {
@@ -134,6 +154,95 @@ const AnimeListTable: React.FC = () => {
     setSearchQuery('');
   };
 
+  // ✅ Auto-generate SEO data when title changes
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setEditForm({ ...editForm, title: newTitle });
+    
+    // Auto-generate slug if empty
+    if (!editForm.slug && newTitle.trim()) {
+      const generatedSlug = newTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      
+      setEditForm(prev => ({ 
+        ...prev, 
+        slug: generatedSlug,
+        seoTitle: prev.seoTitle || `Watch ${newTitle} Online in ${prev.subDubStatus} | AnimeBing`
+      }));
+    }
+  };
+
+  // ✅ Auto-generate SEO title when language changes
+  const handleSubDubStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value as Anime['subDubStatus'];
+    setEditForm({ ...editForm, subDubStatus: newStatus });
+    
+    if (editForm.title.trim()) {
+      setEditForm(prev => ({ 
+        ...prev, 
+        seoTitle: `Watch ${prev.title} Online in ${newStatus} | AnimeBing`
+      }));
+    }
+  };
+
+  // ✅ Auto-generate SEO fields button
+  const handleAutoGenerateSEO = () => {
+    if (!editForm.title.trim()) {
+      alert('Please enter a title first');
+      return;
+    }
+
+    const keywords = [];
+    
+    // Title-based keywords
+    keywords.push(`${editForm.title} anime`, `watch ${editForm.title} online`, `${editForm.title} ${editForm.subDubStatus.toLowerCase()}`);
+    
+    // Genre-based keywords
+    if (editForm.genreList && editForm.genreList.length > 0) {
+      editForm.genreList.forEach((genre: string) => {
+        keywords.push(`${genre.toLowerCase()} anime`, `${editForm.title} ${genre.toLowerCase()}`);
+      });
+    }
+    
+    // Language/Type based keywords
+    if (editForm.subDubStatus.includes('Hindi Dub')) {
+      keywords.push('hindi dubbed anime', 'anime in hindi', 'hindi dub');
+    }
+    if (editForm.subDubStatus.includes('Hindi Sub')) {
+      keywords.push('hindi subbed anime', 'anime with hindi subtitles', 'hindi sub');
+    }
+    if (editForm.subDubStatus.includes('English Sub')) {
+      keywords.push('english subbed anime', 'anime in english', 'english sub');
+    }
+    
+    // Content type keywords
+    if (editForm.contentType === 'Movie') {
+      keywords.push(`${editForm.title} movie`, 'anime movies', 'full anime movie');
+    }
+    
+    // Remove duplicates and join
+    const uniqueKeywords = [...new Set(keywords)];
+    
+    setEditForm(prev => ({
+      ...prev,
+      seoTitle: prev.seoTitle || `Watch ${prev.title} Online in ${prev.subDubStatus} | AnimeBing`,
+      seoDescription: prev.seoDescription || `Watch ${prev.title} online in ${prev.subDubStatus}. HD quality streaming and downloads. All episodes available.`,
+      seoKeywords: prev.seoKeywords || uniqueKeywords.join(', '),
+      slug: prev.slug || prev.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+    }));
+    
+    alert('SEO data auto-generated successfully!');
+  };
+
   if (loading) return <div className="flex justify-center py-8"><Spinner size="lg" /></div>;
   if (error) return <p className="text-red-400 text-center p-4">{error}</p>;
 
@@ -146,7 +255,7 @@ const AnimeListTable: React.FC = () => {
             <div className="relative flex-1 max-w-md">
               <input
                 type="text"
-                placeholder="Search by title, genre, language, or type..."
+                placeholder="Search by title, genre, language, SEO keywords, or type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg pl-10 pr-10 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
@@ -183,7 +292,7 @@ const AnimeListTable: React.FC = () => {
           {/* Search Tips */}
           {searchQuery && filteredAnimes.length === 0 && (
             <div className="mt-2 text-sm text-slate-400">
-              💡 Try searching by: title, genre (action, romance), language (hindi, english), or type (anime, movie)
+              💡 Try searching by: title, genre (action, romance), language (hindi, english), SEO keywords, or type (anime, movie)
             </div>
           )}
         </div>
@@ -299,7 +408,7 @@ const AnimeListTable: React.FC = () => {
                 <th className="p-4 text-left text-slate-300 font-medium">Status</th>
                 <th className="p-4 text-left text-slate-300 font-medium">Sub/Dub</th>
                 <th className="p-4 text-left text-slate-300 font-medium">Episodes</th>
-                <th className="p-4 text-left text-slate-300 font-medium">Reports</th>
+                <th className="p-4 text-left text-slate-300 font-medium">SEO Status</th>
                 <th className="p-4 text-left text-slate-300 font-medium">Actions</th>
               </tr>
             </thead>
@@ -318,6 +427,7 @@ const AnimeListTable: React.FC = () => {
                           <div>{anime.title}</div>
                           <div className="text-xs text-slate-400">
                             {anime.genreList.slice(0, 2).join(', ')}
+                            {anime.slug && <div className="mt-1 text-blue-400">/{anime.slug}</div>}
                           </div>
                         </div>
                       </div>
@@ -365,12 +475,14 @@ const AnimeListTable: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4 text-slate-300">
-                      {anime.reportCount ? (
-                        <span className="bg-red-600/20 text-red-400 px-2 py-1 rounded text-xs whitespace-nowrap">
-                          {anime.reportCount} reports
+                      {anime.seoTitle ? (
+                        <span className="bg-green-600/20 text-green-400 px-2 py-1 rounded text-xs whitespace-nowrap">
+                          SEO ✓
                         </span>
                       ) : (
-                        <span className="text-slate-500 text-xs whitespace-nowrap">No reports</span>
+                        <span className="bg-red-600/20 text-red-400 px-2 py-1 rounded text-xs whitespace-nowrap">
+                          No SEO
+                        </span>
                       )}
                     </td>
                     <td className="p-4">
@@ -383,7 +495,7 @@ const AnimeListTable: React.FC = () => {
                               : 'bg-blue-600 hover:bg-blue-500 text-white'
                           }`}
                         >
-                          {editingAnimeId === anime.id ? 'Cancel Edit' : 'Edit'}
+                          {editingAnimeId === anime.id ? 'Cancel Edit' : 'Edit SEO'}
                         </button>
                         {editingAnimeId !== anime.id && (
                           <button
@@ -402,12 +514,23 @@ const AnimeListTable: React.FC = () => {
                     <tr className="bg-slate-800/70">
                       <td colSpan={8} className="p-4">
                         <div className="border-l-4 border-blue-500 pl-4 py-2">
-                          <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit {anime.contentType}: {anime.title}
-                          </h4>
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Edit {anime.contentType}: {anime.title}
+                            </h4>
+                            <button
+                              onClick={handleAutoGenerateSEO}
+                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap flex items-center gap-1"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Auto-Generate SEO
+                            </button>
+                          </div>
                           
                           <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -416,7 +539,7 @@ const AnimeListTable: React.FC = () => {
                                 <input
                                   type="text"
                                   value={editForm.title}
-                                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                  onChange={handleTitleChange}
                                   className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                   required
                                 />
@@ -451,7 +574,7 @@ const AnimeListTable: React.FC = () => {
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Sub/Dub Status</label>
                                 <select
                                   value={editForm.subDubStatus}
-                                  onChange={(e) => setEditForm({ ...editForm, subDubStatus: e.target.value as Anime['subDubStatus'] })}
+                                  onChange={handleSubDubStatusChange}
                                   className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 >
                                   <option value="Hindi Dub">Hindi Dub</option>
@@ -508,12 +631,82 @@ const AnimeListTable: React.FC = () => {
                               />
                             </div>
 
+                            {/* ✅ SEO SECTION */}
+                            <div className="mt-6 pt-4 border-t border-slate-600">
+                              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                                SEO Settings (For Google Search)
+                              </h4>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                                    SEO Title
+                                    <span className="text-xs text-slate-400 ml-2">({editForm.seoTitle.length}/60)</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editForm.seoTitle}
+                                    onChange={(e) => setEditForm({ ...editForm, seoTitle: e.target.value })}
+                                    className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                    placeholder="Watch {Title} Online in {Language} | AnimeBing"
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">Appears in Google search results</p>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                                    URL Slug
+                                    <span className="text-xs text-blue-400 ml-2">animebing.in/anime/{editForm.slug || 'your-slug'}</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editForm.slug}
+                                    onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                                    className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    placeholder="naruto-shippuden-hindi-dub"
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">SEO-friendly URL (lowercase, hyphens)</p>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                                    SEO Description
+                                    <span className="text-xs text-slate-400 ml-2">({editForm.seoDescription.length}/160)</span>
+                                  </label>
+                                  <textarea
+                                    value={editForm.seoDescription}
+                                    onChange={(e) => setEditForm({ ...editForm, seoDescription: e.target.value })}
+                                    className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors h-20"
+                                    placeholder="Watch {Title} online in {Language}. HD quality streaming and downloads. All episodes available."
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">Appears below the title in Google search results</p>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                                    SEO Keywords (Comma separated)
+                                    <span className="text-xs text-slate-400 ml-2">Important for search rankings</span>
+                                  </label>
+                                  <textarea
+                                    value={editForm.seoKeywords}
+                                    onChange={(e) => setEditForm({ ...editForm, seoKeywords: e.target.value })}
+                                    className="w-full bg-slate-700 border border-slate-600 text-white rounded px-3 py-2 text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors h-20"
+                                    placeholder="naruto shippuden hindi dub, watch naruto shippuden online, naruto anime in hindi, action anime, adventure anime"
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">Keywords that users might search for on Google</p>
+                                </div>
+                              </div>
+                            </div>
+
                             <div className="flex gap-3 pt-2">
                               <button
                                 type="submit"
-                                className="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 rounded text-sm transition-colors"
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-medium py-2 px-4 rounded text-sm transition-colors"
                               >
-                                Save Changes
+                                Save Changes & SEO
                               </button>
                               <button
                                 type="button"
