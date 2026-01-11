@@ -1,12 +1,13 @@
- // components/AnimeDetailPage.tsx - UPDATED VERSION WITH SEO
+// components/AnimeDetailPage.tsx - FIXED VERSION WITH BACK BUTTON ISSUE RESOLVED
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import ReportButton from './ReportButton';
 import Spinner from './Spinner';
 import { AnimeDetailSkeleton } from './SkeletonLoader';
-import { getAnimeById } from '../services/animeService';
-import SEO from '../src/components/SEO'; // ✅ SEO IMPORT ADDED
+import { getAnimeById, getAnimeBySlug, getAllAnime } from '../services/animeService';
+import SEO from '../src/components/SEO';
+import { useParams, useNavigate } from 'react-router-dom';
 
 // ✅ ADD DownloadLink interface locally since it might not be in types.ts
 interface DownloadLink {
@@ -17,7 +18,7 @@ interface DownloadLink {
 }
 
 interface Props {
-  anime: Anime | null;
+  anime?: Anime | null;
   onBack: () => void;
   isLoading?: boolean;
 }
@@ -142,6 +143,7 @@ const generateAnimeStructuredData = (anime: Anime) => {
     "image": anime.thumbnail,
     "genre": anime.genreList || ["Anime"],
     "dateCreated": anime.releaseYear ? `${anime.releaseYear}` : undefined,
+    "url": `https://animebing.in/detail/${anime.slug || anime._id}`,
     "potentialAction": {
       "@type": "WatchAction",
       "target": window.location.href
@@ -149,15 +151,17 @@ const generateAnimeStructuredData = (anime: Anime) => {
   };
 };
 
-const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) => {
+const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading = false }) => {
+  const { animeId } = useParams<{ animeId: string }>();
+  const navigate = useNavigate();
+  
+  const [anime, setAnime] = useState<Anime | null>(propAnime || null);
   const [episodesLoading, setEpisodesLoading] = useState(true);
   const [chaptersLoading, setChaptersLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<number>(1);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  // ✅ STATE FOR FULL ANIME DETAILS
   const [fullAnime, setFullAnime] = useState<Anime | null>(null);
   const [animeLoading, setAnimeLoading] = useState(false);
   const [downloadingItem, setDownloadingItem] = useState<string | null>(null);
@@ -185,6 +189,82 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     return 'Episodes will be added soon!';
   };
 
+  // ✅ FIXED: FETCH ANIME BY SLUG OR ID FROM URL WITH BETTER ERROR HANDLING
+  useEffect(() => {
+    const fetchAnimeFromUrl = async () => {
+      if (propAnime) return;
+      
+      if (!animeId) {
+        setError('No anime ID or slug provided');
+        return;
+      }
+
+      setAnimeLoading(true);
+      try {
+        let animeData = null;
+        
+        // Check if animeId is a MongoDB ObjectId
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(animeId);
+        
+        // ✅ FIX: Try multiple methods to find anime
+        if (isObjectId) {
+          // 1. Try fetching by ID first
+          animeData = await getAnimeById(animeId);
+          console.log('Fetched by ID:', animeData ? 'Found' : 'Not found');
+        }
+        
+        // If not found by ID or not ObjectId, try by slug
+        if (!animeData) {
+          try {
+            animeData = await getAnimeBySlug(animeId);
+            console.log('Fetched by slug:', animeData ? 'Found' : 'Not found');
+          } catch (slugErr) {
+            console.log('Slug fetch failed:', slugErr);
+          }
+        }
+        
+        // If still not found, try searching in all anime
+        if (!animeData) {
+          console.log('Searching in all anime...');
+          const allAnime = await getAllAnime();
+          animeData = allAnime.find(a => {
+            // Check by slug
+            if (a.slug === animeId) return true;
+            // Check by ID (for backward compatibility)
+            if (a._id === animeId || a.id === animeId) return true;
+            // Check by title slug
+            const titleSlug = a.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            return titleSlug === animeId;
+          });
+          console.log('Found in all anime:', animeData ? 'Yes' : 'No');
+        }
+        
+        if (animeData) {
+          setAnime(animeData);
+          setFullAnime(animeData);
+          
+          // ✅ FIX: Only update URL if we have a valid slug AND it's different
+          // AND we're not coming from an ID URL
+          if (animeData.slug && animeId !== animeData.slug && !isObjectId) {
+            console.log('Updating URL to canonical slug:', animeData.slug);
+            const canonicalUrl = `/detail/${animeData.slug}`;
+            // Use replaceState to avoid adding to history
+            window.history.replaceState({}, '', canonicalUrl);
+          }
+        } else {
+          setError(`Anime not found. URL parameter: ${animeId}`);
+        }
+      } catch (err) {
+        console.error('Failed to fetch anime:', err);
+        setError('Failed to load anime data. Please check the URL or try again.');
+      } finally {
+        setAnimeLoading(false);
+      }
+    };
+
+    fetchAnimeFromUrl();
+  }, [animeId, propAnime]);
+
   // ✅ FETCH FULL ANIME DETAILS IF NEEDED
   useEffect(() => {
     const fetchFullAnimeDetails = async () => {
@@ -197,8 +277,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
 
       setAnimeLoading(true);
       try {
-        const fields = 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList';
-        const fullAnimeData = await getAnimeById(anime.id, fields);
+        const fullAnimeData = await getAnimeById(anime.id);
         if (fullAnimeData) {
           setFullAnime(fullAnimeData);
         } else {
@@ -225,6 +304,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
         title: 'Anime Details | AnimeBing',
         description: 'Watch anime online in Hindi and English. Download anime episodes for free.',
         keywords: 'anime, watch anime online, hindi anime, english anime, anime download, anime streaming',
+        canonicalUrl: window.location.href,
       };
     }
 
@@ -241,9 +321,13 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     // Generate keywords
     const keywords = displayAnime.seoKeywords || generateAnimeKeywords(displayAnime);
     
-    // Generate canonical URL
-    const slug = displayAnime.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const canonicalUrl = `https://animebing.in/anime/${slug}`;
+    // ✅ Generate canonical URL using slug
+    const slug = displayAnime.slug || 
+      displayAnime.title.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    
+    const canonicalUrl = `https://animebing.in/detail/${slug}`;
     
     // Generate structured data
     const structuredData = generateAnimeStructuredData(displayAnime);
@@ -255,13 +339,13 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
       canonicalUrl,
       structuredData,
       ogImage: displayAnime.thumbnail,
-      ogUrl: window.location.href
+      ogUrl: canonicalUrl
     };
   };
 
   // Get SEO data
   const seoData = getSEOData();
-  
+
   // Optimize thumbnail URLs for different displays
   const mobileThumbnail = displayAnime?.thumbnail 
     ? optimizeImageUrl(displayAnime.thumbnail, 80, 112)
@@ -420,9 +504,48 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     );
   };
 
+  // ✅ FIXED: Handle back button click properly
+  const handleBackClick = () => {
+    // Use navigate to go back properly
+    navigate(-1);
+    // Also call the original onBack prop if provided
+    if (onBack) {
+      onBack();
+    }
+  };
+
   // ✅ LOADING STATE
-  if (isLoading || !anime || animeLoading) {
+  if (isLoading || animeLoading || (!anime && !error)) {
     return <AnimeDetailSkeleton />;
+  }
+
+  // ✅ ERROR STATE
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div className="bg-slate-800/50 rounded-2xl p-8 max-w-md mx-auto border border-red-500/30">
+            <div className="text-6xl mb-4">😕</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Anime Not Found</h2>
+            <p className="text-slate-300 mb-4">{error}</p>
+            <div className="space-y-3">
+              <button
+                onClick={handleBackClick}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 w-full"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 w-full"
+              >
+                Go to Homepage
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const currentSessionItems = itemsBySession[selectedSession] || [];
@@ -442,14 +565,14 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
       
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="container mx-auto px-3 py-4">
-          {/* Back Button */}
+          {/* ✅ FIXED: Back Button with proper navigation */}
           <button
-            onClick={onBack}
+            onClick={handleBackClick}
             className="group bg-slate-800/60 hover:bg-slate-700/80 text-white px-4 py-2 rounded-lg mb-4 flex items-center gap-2 transition-all duration-300 font-medium backdrop-blur-sm border border-slate-700 hover:border-purple-500/30 text-sm"
-            aria-label="Go back to home page"
+            aria-label="Go back"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            Back to Home
+            Back
           </button>
 
           {/* MOBILE VIEW */}
@@ -646,12 +769,12 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                                 showText={false}
                               />
                               <ReportButton
-                                animeId={anime.id}
+                                animeId={anime!.id}
                                 episodeId={itemData._id}
                                 episodeNumber={
                                   isManga ? itemData.chapterNumber : itemData.episodeNumber
                                 }
-                                animeTitle={anime.title}
+                                animeTitle={anime!.title}
                               />
                             </div>
                           </div>
@@ -865,12 +988,12 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                                 />
                                 <div className="scale-90">
                                   <ReportButton
-                                    animeId={anime.id}
+                                    animeId={anime!.id}
                                     episodeId={itemData._id}
                                     episodeNumber={
                                       isManga ? itemData.chapterNumber : itemData.episodeNumber
                                     }
-                                    animeTitle={anime.title}
+                                    animeTitle={anime!.title}
                                   />
                                 </div>
                               </div>

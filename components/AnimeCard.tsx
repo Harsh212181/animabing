@@ -1,11 +1,12 @@
-   // components/AnimeCard.tsx - OPTIMIZED VERSION WITH IMAGE DELIVERY FIXES
+// components/AnimeCard.tsx - SEO UPDATED VERSION WITH SEO-FRIENDLY URLS
 import React from 'react';
 import type { Anime } from '../src/types';
 import { PlayIcon } from './icons/PlayIcon';
+import { useNavigate } from 'react-router-dom';
 
 interface AnimeCardProps {
   anime: Anime;
-  onClick: (anime: Anime) => void;
+  onClick?: (anime: Anime) => void; // Optional now since we use navigate
   index: number;
   showStatus?: boolean;
 }
@@ -47,6 +48,8 @@ const generateSrcSet = (url: string, baseWidth: number, baseHeight: number): str
 };
 
 const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus = false }) => {
+  const navigate = useNavigate();
+  
   // Define display dimensions
   const displayWidth = 193;
   const displayHeight = 289;
@@ -54,18 +57,56 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus
   // Optimize the thumbnail URL
   const optimizedThumbnail = optimizeImageUrl(anime.thumbnail, displayWidth, displayHeight);
   const thumbnailSrcSet = generateSrcSet(anime.thumbnail, displayWidth, displayHeight);
+  
+  // ✅ SEO-FRIENDLY URL GENERATION
+  const getAnimeDetailUrl = () => {
+    // Priority 1: Use slug if available (for SEO)
+    if (anime.slug && anime.slug.trim() !== '') {
+      return `/detail/${anime.slug}`;
+    }
+    // Priority 2: Use SEO-friendly title slug as fallback
+    else if (anime.title) {
+      const titleSlug = anime.title
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/--+/g, '-')
+        .trim();
+      return `/detail/${titleSlug}`;
+    }
+    // Priority 3: Fallback to ID
+    else {
+      return `/detail/${anime._id || anime.id}`;
+    }
+  };
+  
+  const handleCardClick = () => {
+    const detailUrl = getAnimeDetailUrl();
+    
+    // ✅ Use navigate for SEO-friendly URLs
+    navigate(detailUrl);
+    window.scrollTo(0, 0);
+    
+    // Call original onClick if provided (for backward compatibility)
+    if (onClick) {
+      onClick(anime);
+    }
+  };
+  
+  // ✅ Get proper link for accessibility
+  const detailUrl = getAnimeDetailUrl();
 
   return (
     <div
       className="anime-card group relative overflow-hidden rounded-lg shadow-lg cursor-pointer transition-all duration-300 card-load-animate opacity-0 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-800/40 aspect-[2/3] w-full"
       style={{ animationDelay: `${index * 50}ms` }}
-      onClick={() => onClick(anime)}
+      onClick={handleCardClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onClick(anime);
+          handleCardClick();
         }
       }}
       aria-label={`View details for ${anime.title}`}
@@ -76,7 +117,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus
         <img
           src={optimizedThumbnail}
           srcSet={thumbnailSrcSet}
-          alt={anime.title}
+          alt={`${anime.title} - ${anime.contentType || 'Anime'} ${anime.releaseYear ? anime.releaseYear + '' : ''} ${anime.subDubStatus || ''}`}
           className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
           loading="lazy"
           width={displayWidth}
@@ -109,12 +150,19 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus
               {anime.title}
             </h3>
 
-            {/* Year + SubDub */}
+            {/* Year + SubDub + SEO Hidden Info */}
             <div className="flex justify-between items-center">
               <p className="text-slate-300 text-xs sm:text-sm">{anime.releaseYear}</p>
               <span className="bg-purple-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
                 {anime.subDubStatus}
               </span>
+            </div>
+            
+            {/* ✅ Hidden SEO Information for Google */}
+            <div style={{ display: 'none' }} aria-hidden="true">
+              <span>Watch {anime.title} online</span>
+              <span>{anime.contentType} in {anime.subDubStatus}</span>
+              <span>AnimeBing.in - Free anime streaming</span>
             </div>
 
           </div>
@@ -126,6 +174,16 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick, index, showStatus
             <PlayIcon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
           </div>
         </div>
+        
+        {/* ✅ Hidden Link for SEO Crawlers */}
+        <a 
+          href={detailUrl} 
+          style={{ display: 'none' }} 
+          aria-hidden="true"
+          data-seo="true"
+        >
+          Watch {anime.title} full episodes in {anime.subDubStatus} - AnimeBing
+        </a>
 
       </div>
     </div>

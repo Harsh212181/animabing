@@ -1,4 +1,4 @@
-  // services/animeServices.ts - FIXED VERSION
+// services/animeServices.ts - UPDATED WITH SLUG SUPPORT
 import type { Anime, Episode, Chapter } from '../src/types';
 
 // ✅ FIX: Local development के लिए PORT 5173 है, server PORT 3000 पर है
@@ -7,6 +7,60 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 // ✅ CACHE IMPLEMENTATION
 const cache = new Map();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
+// ✅ ADDED: GET ANIME BY SLUG (SEO-friendly)
+export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Anime | null> => {
+  const cacheKey = `anime-slug-${slug}-${fields || 'default'}`;
+  
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log('🎯 Cache hit for anime by slug:', slug);
+    return cached.data;
+  }
+
+  try {
+    console.log('📡 Fetching anime by slug:', slug);
+    
+    // Build URL with optional fields parameter
+    let url = `${API_BASE}/anime/slug/${encodeURIComponent(slug)}`;
+    if (fields) {
+      url += `?fields=${encodeURIComponent(fields)}`;
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('🔍 Anime not found by slug:', slug);
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const animeData = {
+        ...result.data,
+        id: result.data._id || result.data.id,
+        slug: result.data.slug || slug // Ensure slug is preserved
+      };
+      
+      // Store in cache
+      cache.set(cacheKey, {
+        data: animeData,
+        timestamp: Date.now()
+      });
+      
+      console.log('✅ Found anime by slug:', animeData.title);
+      return animeData;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching anime by slug:', error);
+    return null;
+  }
+};
 
 // ✅ ADDED: FEATURED ANIME FUNCTION (FIXES THE MISSING FUNCTION)
 export const getFeaturedAnime = async (): Promise<Anime[]> => {
@@ -82,7 +136,8 @@ export const getAnimePaginated = async (page: number = 1, limit: number = 24, fi
       animeData = result.data.map((anime: any) => ({
         ...anime,
         id: anime._id || anime.id,
-        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now()
+        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now(),
+        slug: anime.slug // Ensure slug is included
       }));
     }
 
@@ -128,7 +183,8 @@ export const searchAnime = async (query: string, fields?: string): Promise<Anime
       searchData = result.data.map((anime: any) => ({
         ...anime,
         id: anime._id || anime.id,
-        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now()
+        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now(),
+        slug: anime.slug // Ensure slug is included
       }));
     }
 
@@ -171,7 +227,8 @@ export const getAnimeById = async (id: string, fields?: string): Promise<Anime |
     if (result.success && result.data) {
       const animeData = {
         ...result.data,
-        id: result.data._id || result.data.id
+        id: result.data._id || result.data.id,
+        slug: result.data.slug // Ensure slug is included
       };
       
       // Store in cache
@@ -380,6 +437,20 @@ export const getChapterDownloadLinks = async (mangaId: string, chapterNumber: nu
     console.error('❌ Error fetching chapter download links:', error);
     return null;
   }
+};
+
+// ✅ ADDED: Clear slug cache
+export const clearSlugCache = (slug: string) => {
+  const keysToDelete: string[] = [];
+  
+  cache.forEach((value, key) => {
+    if (key.includes(`slug-${slug}`)) {
+      keysToDelete.push(key);
+    }
+  });
+  
+  keysToDelete.forEach(key => cache.delete(key));
+  console.log(`🗑️ Cleared slug cache for: ${slug}`);
 };
 
 // ✅ Clear cache function
