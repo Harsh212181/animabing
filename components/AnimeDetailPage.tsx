@@ -1,13 +1,13 @@
-// components/AnimeDetailPage.tsx - FIXED VERSION WITH BACK BUTTON ISSUE RESOLVED
+// components/AnimeDetailPage.tsx - SEO UPDATED VERSION WITH SLUG SUPPORT
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import ReportButton from './ReportButton';
 import Spinner from './Spinner';
 import { AnimeDetailSkeleton } from './SkeletonLoader';
-import { getAnimeById, getAnimeBySlug, getAllAnime } from '../services/animeService';
-import SEO from '../src/components/SEO';
-import { useParams, useNavigate } from 'react-router-dom';
+import { getAnimeById, getAnimeBySlug } from '../services/animeService';
+import SEO from '../src/components/SEO'; // ✅ SEO IMPORT ADDED
+import { useParams, useNavigate } from 'react-router-dom'; // ✅ ADDED FOR SLUG SUPPORT
 
 // ✅ ADD DownloadLink interface locally since it might not be in types.ts
 interface DownloadLink {
@@ -18,7 +18,7 @@ interface DownloadLink {
 }
 
 interface Props {
-  anime?: Anime | null;
+  anime?: Anime | null; // ✅ Made optional because we fetch from URL
   onBack: () => void;
   isLoading?: boolean;
 }
@@ -143,7 +143,7 @@ const generateAnimeStructuredData = (anime: Anime) => {
     "image": anime.thumbnail,
     "genre": anime.genreList || ["Anime"],
     "dateCreated": anime.releaseYear ? `${anime.releaseYear}` : undefined,
-    "url": `https://animebing.in/detail/${anime.slug || anime._id}`,
+    "url": `https://animebing.in/detail/${anime.slug || anime._id}`, // ✅ SEO URL
     "potentialAction": {
       "@type": "WatchAction",
       "target": window.location.href
@@ -189,10 +189,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
     return 'Episodes will be added soon!';
   };
 
-  // ✅ FIXED: FETCH ANIME BY SLUG OR ID FROM URL WITH BETTER ERROR HANDLING
+  // ✅ FETCH ANIME BY SLUG OR ID FROM URL
   useEffect(() => {
     const fetchAnimeFromUrl = async () => {
-      if (propAnime) return;
+      if (propAnime) return; // If anime is passed as prop, use it
       
       if (!animeId) {
         setError('No anime ID or slug provided');
@@ -201,62 +201,49 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
 
       setAnimeLoading(true);
       try {
-        let animeData = null;
+        let animeData;
         
-        // Check if animeId is a MongoDB ObjectId
+        // Check if animeId is a slug (not a MongoDB ObjectId)
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(animeId);
         
-        // ✅ FIX: Try multiple methods to find anime
         if (isObjectId) {
-          // 1. Try fetching by ID first
+          // Fetch by ID
           animeData = await getAnimeById(animeId);
-          console.log('Fetched by ID:', animeData ? 'Found' : 'Not found');
-        }
-        
-        // If not found by ID or not ObjectId, try by slug
-        if (!animeData) {
+        } else {
+          // Try fetching by slug
           try {
             animeData = await getAnimeBySlug(animeId);
-            console.log('Fetched by slug:', animeData ? 'Found' : 'Not found');
-          } catch (slugErr) {
-            console.log('Slug fetch failed:', slugErr);
+            
+            // If not found by slug, try fetching from all anime
+            if (!animeData) {
+              const allAnime = await getAllAnime();
+              animeData = allAnime.find(a => 
+                a.slug === animeId || 
+                (a.title && a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === animeId)
+              );
+            }
+          } catch (err) {
+            // Fallback to fetching by ID if slug fails
+            console.log('Slug fetch failed, trying ID...');
+            animeData = await getAnimeById(animeId);
           }
-        }
-        
-        // If still not found, try searching in all anime
-        if (!animeData) {
-          console.log('Searching in all anime...');
-          const allAnime = await getAllAnime();
-          animeData = allAnime.find(a => {
-            // Check by slug
-            if (a.slug === animeId) return true;
-            // Check by ID (for backward compatibility)
-            if (a._id === animeId || a.id === animeId) return true;
-            // Check by title slug
-            const titleSlug = a.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return titleSlug === animeId;
-          });
-          console.log('Found in all anime:', animeData ? 'Yes' : 'No');
         }
         
         if (animeData) {
           setAnime(animeData);
           setFullAnime(animeData);
           
-          // ✅ FIX: Only update URL if we have a valid slug AND it's different
-          // AND we're not coming from an ID URL
-          if (animeData.slug && animeId !== animeData.slug && !isObjectId) {
-            console.log('Updating URL to canonical slug:', animeData.slug);
+          // ✅ Update browser URL with canonical slug if available
+          if (animeData.slug && animeId !== animeData.slug) {
             const canonicalUrl = `/detail/${animeData.slug}`;
-            // Use replaceState to avoid adding to history
             window.history.replaceState({}, '', canonicalUrl);
           }
         } else {
-          setError(`Anime not found. URL parameter: ${animeId}`);
+          setError('Anime not found');
         }
       } catch (err) {
         console.error('Failed to fetch anime:', err);
-        setError('Failed to load anime data. Please check the URL or try again.');
+        setError('Failed to load anime data');
       } finally {
         setAnimeLoading(false);
       }
@@ -345,6 +332,18 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
 
   // Get SEO data
   const seoData = getSEOData();
+  
+  // ✅ Function to fetch all anime (fallback for slug search)
+  const getAllAnime = async (): Promise<Anime[]> => {
+    try {
+      const response = await fetch(`${API_BASE}/anime`);
+      const data = await response.json();
+      return data.data || [];
+    } catch (err) {
+      console.error('Error fetching all anime:', err);
+      return [];
+    }
+  };
 
   // Optimize thumbnail URLs for different displays
   const mobileThumbnail = displayAnime?.thumbnail 
@@ -504,16 +503,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
     );
   };
 
-  // ✅ FIXED: Handle back button click properly
-  const handleBackClick = () => {
-    // Use navigate to go back properly
-    navigate(-1);
-    // Also call the original onBack prop if provided
-    if (onBack) {
-      onBack();
-    }
-  };
-
   // ✅ LOADING STATE
   if (isLoading || animeLoading || (!anime && !error)) {
     return <AnimeDetailSkeleton />;
@@ -528,20 +517,12 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
             <div className="text-6xl mb-4">😕</div>
             <h2 className="text-2xl font-bold text-white mb-2">Anime Not Found</h2>
             <p className="text-slate-300 mb-4">{error}</p>
-            <div className="space-y-3">
-              <button
-                onClick={handleBackClick}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 w-full"
-              >
-                Go Back
-              </button>
-              <button
-                onClick={() => window.location.href = '/'}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 w-full"
-              >
-                Go to Homepage
-              </button>
-            </div>
+            <button
+              onClick={onBack}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105"
+            >
+              Go Back to Home
+            </button>
           </div>
         </div>
       </div>
@@ -565,14 +546,14 @@ const AnimeDetailPage: React.FC<Props> = ({ anime: propAnime, onBack, isLoading 
       
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="container mx-auto px-3 py-4">
-          {/* ✅ FIXED: Back Button with proper navigation */}
+          {/* Back Button */}
           <button
-            onClick={handleBackClick}
+            onClick={onBack}
             className="group bg-slate-800/60 hover:bg-slate-700/80 text-white px-4 py-2 rounded-lg mb-4 flex items-center gap-2 transition-all duration-300 font-medium backdrop-blur-sm border border-slate-700 hover:border-purple-500/30 text-sm"
-            aria-label="Go back"
+            aria-label="Go back to home page"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            Back
+            Back to Home
           </button>
 
           {/* MOBILE VIEW */}
