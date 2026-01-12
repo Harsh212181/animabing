@@ -121,7 +121,7 @@ app.get('/sitemap.xml', async (req, res) => {
           currentDate;
         
         xml += `  <url>
-    <loc>https://animebing.in/anime/${anime.slug}</loc>
+    <loc>https://animebing.in/detail/${anime.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>\n`;
@@ -170,7 +170,7 @@ app.get('/sitemap.xml', async (req, res) => {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://animebing.in/anime</loc>
+    <loc>https://animebing.in/detail</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -243,8 +243,8 @@ app.get('/rss.xml', async (req, res) => {
       
       rss += `    <item>
       <title><![CDATA[${anime.title}]]></title>
-      <link>https://animebing.in/anime/${anime.slug || anime._id}</link>
-      <guid>https://animebing.in/anime/${anime.slug || anime._id}</guid>
+      <link>https://animebing.in/detail/${anime.slug || anime._id}</link>
+      <guid>https://animebing.in/detail/${anime.slug || anime._id}</guid>
       <pubDate>${pubDate}</pubDate>
       <description><![CDATA[${description}]]></description>
       <enclosure url="${anime.thumbnail || ''}" type="image/jpeg" />

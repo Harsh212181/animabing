@@ -243,7 +243,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     
     // Generate canonical URL
     const slug = displayAnime.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const canonicalUrl = `https://animebing.in/anime/${slug}`;
+    const canonicalUrl = `https://animebing.in/detail/${slug}`;
     
     // Generate structured data
     const structuredData = generateAnimeStructuredData(displayAnime);

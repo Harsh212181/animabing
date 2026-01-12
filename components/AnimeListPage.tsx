@@ -101,7 +101,7 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect }) => {
     }
     
     // Generate canonical URL
-    let canonicalUrl = 'https://animebing.in/anime';
+    let canonicalUrl = 'https://animebing.in/detail';
     const params = new URLSearchParams();
     
     if (localFilter !== 'All') {
@@ -125,7 +125,7 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect }) => {
         "item": {
           "@type": "TVSeries",
           "name": anime.title,
-          "url": `https://animebing.in/anime/${anime.slug || anime.id}`,
+          "url": `https://animebing.in/detail/${anime.slug || anime.id}`,
           "description": anime.description || `Watch ${anime.title} online`,
           "genre": anime.genreList || ["Anime"]
         }
@@ -243,7 +243,7 @@ const AnimeListPage: React.FC<AnimeListPageProps> = ({ onAnimeSelect }) => {
                       </span>
                       {/* Hidden SEO data */}
                       <meta itemProp="name" content={anime.title} />
-                      <link itemProp="url" href={`https://animebing.in/anime/${anime.slug || anime.id}`} />
+                      <link itemProp="url" href={`https://animebing.in/detail/${anime.slug || anime.id}`} />
                     </button>
                   </li>
                 ))

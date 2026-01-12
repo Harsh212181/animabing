@@ -14,28 +14,28 @@
   </url>
   
   <url>
-    <loc>https://animebing.in/anime</loc>
+    <loc>https://animebing.in/detail</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://animebing.in/anime?filter=Hindi%20Dub</loc>
+    <loc>https://animebing.in/detail?filter=Hindi%20Dub</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://animebing.in/anime?filter=Hindi%20Sub</loc>
+    <loc>https://animebing.in/detail?filter=Hindi%20Sub</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://animebing.in/anime?filter=English%20Sub</loc>
+    <loc>https://animebing.in/detail?filter=English%20Sub</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -126,7 +126,7 @@
   <!-- Example of how dynamic anime pages will look: -->
   <!-- 
   <url>
-    <loc>https://animebing.in/anime/naruto-shippuden-hindi-dub</loc>
+    <loc>https://animebing.in/detail/naruto-shippuden-hindi-dub</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -140,7 +140,7 @@
   <!-- DYNAMIC MOVIE PAGES -->
   <!--
   <url>
-    <loc>https://animebing.in/anime/demon-slayer-movie-hindi-dub</loc>
+    <loc>https://animebing.in/detail/demon-slayer-movie-hindi-dub</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
