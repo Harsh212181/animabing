@@ -1,11 +1,11 @@
- // components/AnimeDetailPage.tsx - UPDATED VERSION WITH SEO
+// components/AnimeDetailPage.tsx - UPDATED WITH ID + SLUG SUPPORT
 import React, { useState, useEffect } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import ReportButton from './ReportButton';
 import Spinner from './Spinner';
 import { AnimeDetailSkeleton } from './SkeletonLoader';
-import { getAnimeById } from '../services/animeService';
+import { getAnimeByIdOrSlug, getEpisodesByAnimeId, getChaptersByMangaId } from '../services/animeService'; // ✅ UPDATED IMPORT
 import SEO from '../src/components/SEO'; // ✅ SEO IMPORT ADDED
 
 // ✅ ADD DownloadLink interface locally since it might not be in types.ts
@@ -22,7 +22,8 @@ interface Props {
   isLoading?: boolean;
 }
 
-const API_BASE = 'https://animabing.onrender.com/api';
+// ✅ Use environment variable for API base (same as animeService.ts)
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://animabing.onrender.com/api';
 
 // Helper functions for image optimization
 const optimizeImageUrl = (url: string, width: number, height: number): string => {
@@ -185,11 +186,12 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     return 'Episodes will be added soon!';
   };
 
-  // ✅ FETCH FULL ANIME DETAILS IF NEEDED
+  // ✅ UPDATED: FETCH FULL ANIME DETAILS IF NEEDED (FIXED VERSION)
   useEffect(() => {
     const fetchFullAnimeDetails = async () => {
       if (!anime) return;
 
+      // If we already have complete data, use it
       if (anime.description && anime.genreList && anime.genreList.length > 0) {
         setFullAnime(anime);
         return;
@@ -197,8 +199,19 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
 
       setAnimeLoading(true);
       try {
-        const fields = 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList';
-        const fullAnimeData = await getAnimeById(anime.id, fields);
+        // ✅ FIXED: Use the correct ID/slug from anime object
+        const animeIdentifier = anime.slug || anime._id || anime.id;
+        
+        if (!animeIdentifier) {
+          console.warn('No identifier found for anime:', anime);
+          setFullAnime(anime);
+          return;
+        }
+
+        // ✅ FIXED: Use getAnimeByIdOrSlug instead of getAnimeById
+        const fields = 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList,seoTitle,seoDescription,seoKeywords,slug';
+        const fullAnimeData = await getAnimeByIdOrSlug(animeIdentifier, fields);
+        
         if (fullAnimeData) {
           setFullAnime(fullAnimeData);
         } else {
@@ -241,9 +254,20 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     // Generate keywords
     const keywords = displayAnime.seoKeywords || generateAnimeKeywords(displayAnime);
     
-    // Generate canonical URL
-    const slug = displayAnime.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const canonicalUrl = `https://animebing.in/detail/${slug}`;
+    // ✅ IMPROVED: Generate canonical URL with actual slug
+    let canonicalSlug;
+    if (displayAnime.slug) {
+      canonicalSlug = displayAnime.slug;
+    } else if (displayAnime.title) {
+      // Fallback to title-based slug
+      canonicalSlug = displayAnime.title.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    } else {
+      canonicalSlug = 'anime-details';
+    }
+    
+    const canonicalUrl = `https://animebing.in/detail/${canonicalSlug}`;
     
     // Generate structured data
     const structuredData = generateAnimeStructuredData(displayAnime);
@@ -292,35 +316,21 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
   // Get available sessions
   const availableSessions = Object.keys(itemsBySession).map(Number).sort((a, b) => a - b);
 
-  // ✅ EPISODES/CHAPTERS FETCH
+  // ✅ UPDATED: EPISODES/CHAPTERS FETCH (using animeService functions)
   useEffect(() => {
     const fetchContent = async () => {
       if (!anime) return;
       try {
         if (isManga) {
           setChaptersLoading(true);
-          const response = await fetch(`${API_BASE}/chapters/${anime.id}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const chaptersData = await response.json();
-          if (Array.isArray(chaptersData)) {
-            setChapters(chaptersData);
-          } else {
-            setChapters([]);
-          }
+          // ✅ Use animeService function
+          const chaptersData = await getChaptersByMangaId(anime.id || anime._id);
+          setChapters(chaptersData);
         } else {
           setEpisodesLoading(true);
-          const response = await fetch(`${API_BASE}/episodes/${anime.id}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const episodesData = await response.json();
-          if (Array.isArray(episodesData)) {
-            setEpisodes(episodesData);
-          } else {
-            setEpisodes([]);
-          }
+          // ✅ Use animeService function
+          const episodesData = await getEpisodesByAnimeId(anime.id || anime._id);
+          setEpisodes(episodesData);
         }
         setError(null);
       } catch (err) {
@@ -646,7 +656,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                                 showText={false}
                               />
                               <ReportButton
-                                animeId={anime.id}
+                                animeId={anime.id || anime._id}
                                 episodeId={itemData._id}
                                 episodeNumber={
                                   isManga ? itemData.chapterNumber : itemData.episodeNumber
@@ -865,7 +875,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                                 />
                                 <div className="scale-90">
                                   <ReportButton
-                                    animeId={anime.id}
+                                    animeId={anime.id || anime._id}
                                     episodeId={itemData._id}
                                     episodeNumber={
                                       isManga ? itemData.chapterNumber : itemData.episodeNumber

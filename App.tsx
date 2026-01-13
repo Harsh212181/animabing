@@ -1,7 +1,6 @@
-// App.tsx - ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS + GA4 ANALYTICS FIX
-// ✅ ALL ADS-RELATED CODE REMOVED
-// ✅ SECRET CODE TYPING LOGS REMOVED
-// ✅ GA4 ANALYTICS ADDED - UTM FIXED
+// App.tsx - UPDATED WITH ID + SLUG SUPPORT
+// ✅ ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS + GA4 ANALYTICS FIX
+// ✅ ID + SLUG SUPPORT ADDED
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
@@ -10,7 +9,6 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import AnimeListPage from './components/AnimeListPage';
-import AnimeDetailPage from './components/AnimeDetailPage';
 import DownloadRedirectPage from './components/DownloadRedirectPage';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Spinner from './components/Spinner';
@@ -20,114 +18,15 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import DMCA from './components/DMCA';
 import TermsAndConditions from './components/TermsAndConditions';
 import Contact from './components/Contact';
-import { getAllAnime } from './services/animeService';
 import AnalyticsTracker from './src/components/AnalyticsTracker'; // ✅ GA4 ANALYTICS IMPORT
+
+// ✅ NEW IMPORT: AnimeDetailWrapper
+import AnimeDetailWrapper from './components/AnimeDetailWrapper';
 
 type ViewType = 'home' | 'list' | 'detail';
 type AdminViewType = 'login' | 'dashboard';
 
-const DetailPageWrapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { animeId } = useParams<{ animeId: string }>();
-  const [anime, setAnime] = useState<Anime | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAnimeData = async () => {
-      if (!animeId) {
-        setError('No anime ID provided');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Production mein log show nahi hoga
-        if (import.meta.env.DEV) {
-          console.log('🔍 Fetching anime data for ID:', animeId);
-        }
-        
-        setIsLoading(true);
-        setError(null);
-        
-        const allAnime = await getAllAnime();
-        
-        if (import.meta.env.DEV) {
-          console.log('📚 All anime loaded:', allAnime.length);
-        }
-        
-        const foundAnime = allAnime.find(a => a.id === animeId || a._id === animeId);
-        
-        if (import.meta.env.DEV) {
-          console.log('🎯 Found anime:', foundAnime);
-        }
-        
-        if (foundAnime) {
-          setAnime(foundAnime);
-        } else {
-          setError('Anime not found');
-        }
-      } catch (err) {
-        // Error sirf development mein show hoga
-        if (import.meta.env.DEV) {
-          console.error('❌ Error fetching anime:', err);
-        }
-        setError('Failed to load anime data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAnimeData();
-  }, [animeId]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-96">
-        <Spinner size="lg" text="Loading anime..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-16">
-        <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
-          <div className="text-6xl mb-4">😕</div>
-          <h2 className="text-2xl font-semibold text-slate-300 mb-2">Error Loading Anime</h2>
-          <p className="text-slate-400 mb-4">{error}</p>
-          <button
-            onClick={onBack}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!anime) {
-    return (
-      <div className="text-center py-16">
-        <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
-          <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-2xl font-semibold text-slate-300 mb-2">Anime Not Found</h2>
-          <p className="text-slate-400 mb-4">
-            The anime you're looking for doesn't exist or has been removed.
-          </p>
-          <button
-            onClick={onBack}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <AnimeDetailPage anime={anime} onBack={onBack} />;
-};
+// ✅ REMOVED: OLD DetailPageWrapper (replaced with AnimeDetailWrapper)
 
 const MainApp: React.FC = () => {
   const navigate = useNavigate();
@@ -336,8 +235,12 @@ const MainApp: React.FC = () => {
   };
 
   const handleAnimeSelect = (anime: Anime) => {
-    navigate(`/detail/${anime.id}`);
-    window.scrollTo(0, 0);
+    // ✅ FIXED: Use anime.slug if available, else use anime.id
+    const identifier = anime.slug || anime.id || anime._id;
+    if (identifier) {
+      navigate(`/detail/${identifier}`);
+      window.scrollTo(0, 0);
+    }
   };
 
   const handleBack = () => {
@@ -455,7 +358,8 @@ const MainApp: React.FC = () => {
             />
           } />
           
-          <Route path="/detail/:animeId" element={<DetailPageWrapper onBack={handleBack} />} />
+          {/* ✅ FIXED: Anime Detail Route with ID/Slug Support */}
+          <Route path="/detail/:idOrSlug" element={<AnimeDetailWrapper />} />
           
           {/* ✅ FIXED: Both Download Routes Added */}
           <Route path="/download" element={<DownloadRedirectPage />} />

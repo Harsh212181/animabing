@@ -1,4 +1,4 @@
-// services/animeServices.ts - UPDATED WITH SLUG SUPPORT
+// services/animeService.ts - UPDATED WITH ID + SLUG SUPPORT
 import type { Anime, Episode, Chapter } from '../src/types';
 
 // ✅ FIX: Local development के लिए PORT 5173 है, server PORT 3000 पर है
@@ -8,21 +8,27 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 const cache = new Map();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
-// ✅ ADDED: GET ANIME BY SLUG (SEO-friendly)
-export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Anime | null> => {
-  const cacheKey = `anime-slug-${slug}-${fields || 'default'}`;
+// ================== CORE FUNCTIONS ==================
+
+/**
+ * ✅ NEW: GET ANIME BY ID OR SLUG (MOST IMPORTANT FUNCTION)
+ * This is the main function that handles both ID and Slug
+ * Used by AnimeDetailWrapper component
+ */
+export const getAnimeByIdOrSlug = async (idOrSlug: string, fields?: string): Promise<Anime | null> => {
+  const cacheKey = `anime-${idOrSlug}-${fields || 'default'}`;
   
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log('🎯 Cache hit for anime by slug:', slug);
+    console.log('🎯 Cache hit for anime by id/slug:', idOrSlug);
     return cached.data;
   }
 
   try {
-    console.log('📡 Fetching anime by slug:', slug);
+    console.log('📡 Fetching anime by id/slug:', idOrSlug);
     
     // Build URL with optional fields parameter
-    let url = `${API_BASE}/anime/slug/${encodeURIComponent(slug)}`;
+    let url = `${API_BASE}/anime/${encodeURIComponent(idOrSlug)}`;
     if (fields) {
       url += `?fields=${encodeURIComponent(fields)}`;
     }
@@ -31,7 +37,7 @@ export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Ani
     
     if (!response.ok) {
       if (response.status === 404) {
-        console.log('🔍 Anime not found by slug:', slug);
+        console.log('🔍 Anime not found by id/slug:', idOrSlug);
         return null;
       }
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -43,7 +49,7 @@ export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Ani
       const animeData = {
         ...result.data,
         id: result.data._id || result.data.id,
-        slug: result.data.slug || slug // Ensure slug is preserved
+        slug: result.data.slug || idOrSlug // Ensure slug is preserved
       };
       
       // Store in cache
@@ -52,17 +58,37 @@ export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Ani
         timestamp: Date.now()
       });
       
-      console.log('✅ Found anime by slug:', animeData.title);
+      console.log('✅ Found anime by id/slug:', animeData.title);
       return animeData;
     }
     return null;
   } catch (error) {
-    console.error('❌ Error fetching anime by slug:', error);
+    console.error('❌ Error fetching anime by id/slug:', error);
     return null;
   }
 };
 
-// ✅ ADDED: FEATURED ANIME FUNCTION (FIXES THE MISSING FUNCTION)
+/**
+ * ✅ ADDED: GET ANIME BY SLUG (SEO-friendly)
+ * Uses the same function but for slug-specific calls
+ */
+export const getAnimeBySlug = async (slug: string, fields?: string): Promise<Anime | null> => {
+  return getAnimeByIdOrSlug(slug, fields);
+};
+
+/**
+ * ✅ UPDATED: Get anime by ID with fields parameter
+ * Now uses the unified function
+ */
+export const getAnimeById = async (id: string, fields?: string): Promise<Anime | null> => {
+  return getAnimeByIdOrSlug(id, fields);
+};
+
+// ================== FEATURED ANIME ==================
+
+/**
+ * ✅ ADDED: FEATURED ANIME FUNCTION (FIXES THE MISSING FUNCTION)
+ */
 export const getFeaturedAnime = async (): Promise<Anime[]> => {
   const cacheKey = 'featured-anime';
   
@@ -87,7 +113,8 @@ export const getFeaturedAnime = async (): Promise<Anime[]> => {
       featuredData = result.data.map((anime: any) => ({
         ...anime,
         id: anime._id || anime.id,
-        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now()
+        lastUpdated: anime.updatedAt ? new Date(anime.updatedAt).getTime() : Date.now(),
+        slug: anime.slug // Ensure slug is included
       }));
     }
 
@@ -105,7 +132,11 @@ export const getFeaturedAnime = async (): Promise<Anime[]> => {
   }
 };
 
-// ✅ UPDATED: Paginated API calls with fields parameter
+// ================== PAGINATION & SEARCH ==================
+
+/**
+ * ✅ UPDATED: Paginated API calls with fields parameter
+ */
 export const getAnimePaginated = async (page: number = 1, limit: number = 24, fields?: string): Promise<Anime[]> => {
   const cacheKey = `anime-page-${page}-${limit}-${fields || 'default'}`;
   
@@ -155,7 +186,9 @@ export const getAnimePaginated = async (page: number = 1, limit: number = 24, fi
   }
 };
 
-// ✅ UPDATED: Search function with fields parameter
+/**
+ * ✅ UPDATED: Search function with fields parameter
+ */
 export const searchAnime = async (query: string, fields?: string): Promise<Anime[]> => {
   const cacheKey = `search-${query}-${fields || 'default'}`;
   
@@ -200,58 +233,18 @@ export const searchAnime = async (query: string, fields?: string): Promise<Anime
   }
 };
 
-// ✅ UPDATED: Get anime by ID with fields parameter
-export const getAnimeById = async (id: string, fields?: string): Promise<Anime | null> => {
-  const cacheKey = `anime-${id}-${fields || 'default'}`;
-  
-  const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
-  }
-
-  try {
-    // Build URL with optional fields parameter
-    let url = `${API_BASE}/anime/${id}`;
-    if (fields) {
-      url += `?fields=${encodeURIComponent(fields)}`;
-    }
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success && result.data) {
-      const animeData = {
-        ...result.data,
-        id: result.data._id || result.data.id,
-        slug: result.data.slug // Ensure slug is included
-      };
-      
-      // Store in cache
-      cache.set(cacheKey, {
-        data: animeData,
-        timestamp: Date.now()
-      });
-      
-      return animeData;
-    }
-    return null;
-  } catch (error) {
-    console.error('❌ Error fetching anime by id:', error);
-    return null;
-  }
-};
-
-// ✅ UPDATED: Get all anime with fields parameter
+/**
+ * ✅ UPDATED: Get all anime with fields parameter
+ */
 export const getAllAnime = async (fields?: string): Promise<Anime[]> => {
   return getAnimePaginated(1, 50, fields); // First page with more items
 };
 
-// ✅ UPDATED: Get episodes by anime ID (now returns proper Episode type)
+// ================== EPISODES & CHAPTERS ==================
+
+/**
+ * ✅ UPDATED: Get episodes by anime ID (now returns proper Episode type)
+ */
 export const getEpisodesByAnimeId = async (animeId: string): Promise<Episode[]> => {
   const cacheKey = `episodes-${animeId}`;
   
@@ -293,7 +286,9 @@ export const getEpisodesByAnimeId = async (animeId: string): Promise<Episode[]> 
   }
 };
 
-// ✅ UPDATED: Get chapters by manga ID (now returns proper Chapter type)
+/**
+ * ✅ UPDATED: Get chapters by manga ID (now returns proper Chapter type)
+ */
 export const getChaptersByMangaId = async (mangaId: string): Promise<Chapter[]> => {
   const cacheKey = `chapters-${mangaId}`;
   
@@ -335,7 +330,9 @@ export const getChaptersByMangaId = async (mangaId: string): Promise<Chapter[]> 
   }
 };
 
-// ✅ FIXED: Get download links for a specific episode (using query parameter)
+/**
+ * ✅ FIXED: Get download links for a specific episode (using query parameter)
+ */
 export const getEpisodeDownloadLinks = async (animeId: string, episodeNumber: number, session?: number): Promise<Episode | null> => {
   const cacheKey = `episode-links-${animeId}-${episodeNumber}-${session || 1}`;
   
@@ -387,7 +384,9 @@ export const getEpisodeDownloadLinks = async (animeId: string, episodeNumber: nu
   }
 };
 
-// ✅ FIXED: Get download links for a specific chapter (using query parameter)
+/**
+ * ✅ FIXED: Get download links for a specific chapter (using query parameter)
+ */
 export const getChapterDownloadLinks = async (mangaId: string, chapterNumber: number, session?: number): Promise<Chapter | null> => {
   const cacheKey = `chapter-links-${mangaId}-${chapterNumber}-${session || 1}`;
   
@@ -439,12 +438,16 @@ export const getChapterDownloadLinks = async (mangaId: string, chapterNumber: nu
   }
 };
 
-// ✅ ADDED: Clear slug cache
+// ================== CACHE UTILITIES ==================
+
+/**
+ * ✅ ADDED: Clear slug cache
+ */
 export const clearSlugCache = (slug: string) => {
   const keysToDelete: string[] = [];
   
   cache.forEach((value, key) => {
-    if (key.includes(`slug-${slug}`)) {
+    if (key.includes(`anime-${slug}`)) {
       keysToDelete.push(key);
     }
   });
@@ -453,13 +456,17 @@ export const clearSlugCache = (slug: string) => {
   console.log(`🗑️ Cleared slug cache for: ${slug}`);
 };
 
-// ✅ Clear cache function
+/**
+ * ✅ Clear cache function
+ */
 export const clearAnimeCache = () => {
   cache.clear();
   console.log('🗑️ Anime cache cleared');
 };
 
-// ✅ Clear specific cache entries
+/**
+ * ✅ Clear specific cache entries
+ */
 export const clearEpisodeCache = (animeId: string) => {
   const keysToDelete: string[] = [];
   
@@ -485,3 +492,29 @@ export const clearChapterCache = (mangaId: string) => {
   keysToDelete.forEach(key => cache.delete(key));
   console.log(`🗑️ Cleared ${keysToDelete.length} chapter cache entries for manga ${mangaId}`);
 };
+
+// ================== EXPORT TYPES ==================
+
+/**
+ * ✅ Type for API response
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * ✅ Type for paginated response
+ */
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    current: number;
+    totalPages: number;
+    hasMore: boolean;
+    totalItems: number;
+  };
+}

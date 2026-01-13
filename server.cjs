@@ -1,4 +1,4 @@
-// server.cjs - UPDATED WITH DYNAMIC SITEMAP GENERATOR
+// server.cjs - SEO OPTIMIZED (Search Query URLs REMOVED)
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./db.cjs');
@@ -43,10 +43,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ DYNAMIC SITEMAP GENERATOR
+// ✅ DYNAMIC SITEMAP GENERATOR - SEO OPTIMIZED
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    console.log('🗺️ Generating dynamic sitemap.xml...');
+    console.log('🗺️ Generating SEO optimized sitemap.xml...');
     
     const Anime = require('./models/Anime.cjs');
     
@@ -63,13 +63,13 @@ app.get('/sitemap.xml', async (req, res) => {
     
     const currentDate = new Date().toISOString().split('T')[0];
     
-    // ✅ STATIC PAGES
+    // ✅ STATIC PAGES ONLY (SEO SAFE)
     const staticPages = [
       { url: 'https://animebing.in', priority: '1.0', changefreq: 'daily' },
       { url: 'https://animebing.in/anime', priority: '0.9', changefreq: 'daily' },
-      { url: 'https://animebing.in/anime?filter=Hindi%20Dub', priority: '0.8', changefreq: 'daily' },
-      { url: 'https://animebing.in/anime?filter=Hindi%20Sub', priority: '0.8', changefreq: 'daily' },
-      { url: 'https://animebing.in/anime?filter=English%20Sub', priority: '0.8', changefreq: 'daily' },
+      { url: 'https://animebing.in/anime?filter=Hindi%20Dub', priority: '0.8', changefreq: 'weekly' },
+      { url: 'https://animebing.in/anime?filter=Hindi%20Sub', priority: '0.8', changefreq: 'weekly' },
+      { url: 'https://animebing.in/anime?filter=English%20Sub', priority: '0.8', changefreq: 'weekly' },
       { url: 'https://animebing.in/privacy', priority: '0.5', changefreq: 'monthly' },
       { url: 'https://animebing.in/terms', priority: '0.5', changefreq: 'monthly' },
       { url: 'https://animebing.in/dmca', priority: '0.5', changefreq: 'monthly' },
@@ -86,42 +86,35 @@ app.get('/sitemap.xml', async (req, res) => {
   </url>\n`;
     });
     
-    // ✅ SEARCH KEYWORD PAGES (For SEO)
-    const searchKeywords = [
-      'naruto',
-      'one%20piece',
-      'dragon%20ball',
-      'demon%20slayer',
-      'attack%20on%20titan',
-      'anime%20in%20hindi',
-      'anime%20in%20hindi%20dub',
-      'anime%20in%20hindi%20sub',
-      'anime%20in%20english%20sub',
-      'watch%20anime%20online',
-      'free%20anime%20download',
-      'anime%20streaming'
+    // ✅ CATEGORY PAGES (SEO FRIENDLY)
+    const categoryPages = [
+      { url: 'https://animebing.in/anime?contentType=Movie', priority: '0.7', changefreq: 'weekly' },
+      { url: 'https://animebing.in/anime?contentType=Manga', priority: '0.7', changefreq: 'weekly' }
     ];
     
-    searchKeywords.forEach(keyword => {
+    categoryPages.forEach(page => {
       xml += `  <url>
-    <loc>https://animebing.in/?search=${keyword}</loc>
+    <loc>${page.url}</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
   </url>\n`;
     });
     
-    // ✅ DYNAMIC ANIME PAGES
+    // ✅ DYNAMIC ANIME PAGES (MOST IMPORTANT)
     console.log(`📺 Adding ${allAnime.length} anime to sitemap...`);
     
     allAnime.forEach(anime => {
-      if (anime.slug) {
+      if (anime.slug || anime._id) {
         const lastmod = anime.updatedAt ? 
           new Date(anime.updatedAt).toISOString().split('T')[0] : 
           currentDate;
         
+        const animeSlug = anime.slug || anime._id.toString();
+        const animeUrl = `https://animebing.in/detail/${animeSlug}`;
+        
         xml += `  <url>
-    <loc>https://animebing.in/detail/${anime.slug}</loc>
+    <loc>${animeUrl}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>\n`;
@@ -134,11 +127,11 @@ app.get('/sitemap.xml', async (req, res) => {
     </image:image>\n`;
         }
         
-        // Add video info if it's a movie or series
+        // Add video info if it's a movie
         if (anime.contentType === 'Movie') {
           xml += `    <video:video>
       <video:title><![CDATA[${anime.title}]]></video:title>
-      <video:description><![CDATA[Watch ${anime.title} online in ${anime.subDubStatus}]]></video:description>
+      <video:description><![CDATA[Watch ${anime.title} online in ${anime.subDubStatus || 'HD quality'}]]></video:description>
       <video:thumbnail_loc>${anime.thumbnail || ''}</video:thumbnail_loc>
       <video:release_date>${anime.releaseYear || currentDate.split('-')[0]}-01-01</video:release_date>
     </video:video>\n`;
@@ -155,25 +148,20 @@ app.get('/sitemap.xml', async (req, res) => {
     res.header('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
     res.send(xml);
     
-    console.log(`✅ Sitemap generated successfully with ${allAnime.length + staticPages.length + searchKeywords.length} URLs`);
+    console.log(`✅ SEO Safe Sitemap generated with ${allAnime.length + staticPages.length + categoryPages.length} URLs`);
+    console.log(`⚠️ IMPORTANT: Search query URLs REMOVED to avoid Google penalties`);
     
   } catch (error) {
     console.error('❌ Error generating sitemap:', error);
     
-    // Fallback to static sitemap if dynamic fails
+    // Fallback to minimal sitemap if dynamic fails
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://animebing.in</loc>
-    <lastmod>2024-01-15</lastmod>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://animebing.in/detail</loc>
-    <lastmod>2024-01-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
   </url>
 </urlset>`;
     
@@ -240,11 +228,12 @@ app.get('/rss.xml', async (req, res) => {
     recentAnime.forEach(anime => {
       const pubDate = anime.updatedAt ? new Date(anime.updatedAt).toUTCString() : currentDate;
       const description = anime.seoDescription || anime.description || `Watch ${anime.title} online`;
+      const animeSlug = anime.slug || anime._id;
       
       rss += `    <item>
       <title><![CDATA[${anime.title}]]></title>
-      <link>https://animebing.in/detail/${anime.slug || anime._id}</link>
-      <guid>https://animebing.in/detail/${anime.slug || anime._id}</guid>
+      <link>https://animebing.in/detail/${animeSlug}</link>
+      <guid>https://animebing.in/detail/${animeSlug}</guid>
       <pubDate>${pubDate}</pubDate>
       <description><![CDATA[${description}]]></description>
       <enclosure url="${anime.thumbnail || ''}" type="image/jpeg" />
@@ -426,7 +415,7 @@ app.get('/api/admin/create-default-admin', async (req, res) => {
   } catch (error) {
     console.error('❌ EMERGENCY Admin creation error:', error);
     res.status(500).json({ 
-      success: false, 
+      success: false,
       error: error.message,
       stack: error.stack 
     });
@@ -674,7 +663,8 @@ app.get('/api/health', (req, res) => {
       rssFeed: 'https://animebing.in/rss.xml',
       dynamicUrls: 'Enabled',
       structuredData: 'Enabled'
-    }
+    },
+    seoWarning: '✅ Search query URLs REMOVED from sitemap to avoid Google penalties'
   });
 });
 
@@ -943,6 +933,9 @@ app.get('/', (req, res) => {
             <li>Open Graph & Twitter Cards</li>
             <li>Admin SEO Control Panel</li>
           </ul>
+          <p style="color: #4CAF50; margin-top: 10px; font-weight: bold;">
+            ✅ SEO FIX APPLIED: Search query URLs removed from sitemap to avoid Google penalties
+          </p>
         </div>
         
         <div class="section">
@@ -968,17 +961,8 @@ app.get('/', (req, res) => {
         <p style="margin-top: 2rem; color: #9CA3AF; font-size: 0.9rem;">
           Server Time: ${new Date().toLocaleString()}<br>
           SEO Status: Complete - Ready for Google Indexing<br>
-          Sitemap URLs: ${(() => {
-            // Estimate URLs count
-            const Anime = require('./models/Anime.cjs');
-            Anime.countDocuments({}, (err, count) => {
-              if(!err) {
-                const totalUrls = count + 20 + 12; // anime + static + search pages
-                console.log(`Estimated sitemap URLs: ${totalUrls}`);
-              }
-            });
-            return "Calculating...";
-          })()}
+          Sitemap Status: ✅ SEO Safe (No search query URLs)<br>
+          Next Step: Submit to Google Search Console
         </p>
       </div>
       
@@ -1012,9 +996,13 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🤖 Robots: https://animebing.in/robots.txt`);
   console.log(`📰 RSS Feed: https://animebing.in/rss.xml`);
   console.log(`✅ SEO Features:`);
-  console.log(`   - Dynamic sitemap with anime pages`);
-  console.log(`   - Robots.txt for search engines`);
-  console.log(`   - RSS feed for updates`);
-  console.log(`   - Structured data for Google`);
+  console.log(`   - ✅ Dynamic sitemap with anime pages`);
+  console.log(`   - ✅ Robots.txt for search engines`);
+  console.log(`   - ✅ RSS feed for updates`);
+  console.log(`   - ✅ Structured data for Google`);
+  console.log(`   - ✅ ID + Slug support for URLs`);
+  console.log(`🚨 SEO IMPORTANT FIX:`);
+  console.log(`   - ❌ Search query URLs REMOVED from sitemap`);
+  console.log(`   - ✅ Now safe from Google duplicate content penalty`);
   console.log(`📈 Next Step: Submit sitemap to Google Search Console`);
 });
