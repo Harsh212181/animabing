@@ -1,4 +1,4 @@
- // src/components/FeaturedAnimeCarousel.tsx - REMOVE VIEW ALL
+ // src/components/FeaturedAnimeCarousel.tsx - EVEN SMALLER INNER CARD
 "use client"
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
@@ -87,35 +87,35 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
       {/* BANNER SECTION - Only show if we have banner anime */}
       {currentAnime && (
         <>
-          {/* MOBILE VIEW - Banner */}
+          {/* MOBILE VIEW - Banner (UNCHANGED) */}
           <div className="block md:hidden">
             <div
-              className="relative overflow-hidden bg-slate-900/50 shadow-lg rounded-xl"
+              className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 shadow-2xl rounded-xl"
               onMouseEnter={() => setIsAutoPlaying(false)}
               onMouseLeave={() => setIsAutoPlaying(true)}
             >
-              <div className="relative h-[180px]">
-                {/* Background Image with Blur */}
+              <div className="relative h-[200px]">
+                {/* Background with gradient overlay */}
                 <div className="absolute inset-0">
                   <img
                     src={optimizeImageUrl(currentAnime.thumbnail, 600, 300)}
                     alt={currentAnime.title}
-                    className="w-full h-full object-cover blur-xs scale-105 opacity-30"
+                    className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/95 to-slate-950/90"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                  {/* Enhanced Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 to-slate-950/70"></div>
                 </div>
 
                 {/* Content - Mobile Layout */}
-                <div className="relative z-10 h-full flex items-center px-3">
-                  <div className="flex items-center gap-3 w-full h-full">
-                    {/* Thumbnail */}
-                    <div className="relative w-24 flex-shrink-0">
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-lg shadow-blue-500/20 ring-1 ring-blue-500/20">
+                <div className="relative z-10 h-full flex items-center px-4">
+                  <div className="flex items-center gap-3 w-full">
+                    {/* Thumbnail with better shadow */}
+                    <div className="relative w-28 flex-shrink-0">
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-2xl shadow-purple-900/50 ring-2 ring-purple-500/30">
                         <img
-                          src={optimizeImageUrl(currentAnime.thumbnail, 160, 240)}
+                          src={optimizeImageUrl(currentAnime.thumbnail, 180, 270)}
                           alt={currentAnime.title}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -125,52 +125,42 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="space-y-1.5">
-                        {/* Badges - EXACT SAME POSITION AS BEFORE */}
-                        <div className="flex flex-wrap gap-1">
+                      <div className="space-y-2">
+                        {/* Title */}
+                        <h2 className="text-base font-bold text-white line-clamp-2 leading-tight drop-shadow-lg">
+                          {currentAnime.title}
+                        </h2>
+
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-1.5">
                           {currentAnime.status && (
                             <span
-                              className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                              className={`px-2 py-0.5 rounded text-xs font-semibold ${
                                 currentAnime.status === "Ongoing"
-                                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                               }`}
                             >
                               {currentAnime.status}
                             </span>
                           )}
                           {currentAnime.subDubStatus && (
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                                currentAnime.subDubStatus === "Hindi Dub"
-                                  ? "bg-purple-600 text-white border border-purple-700"
-                                  : currentAnime.subDubStatus === "Hindi Sub"
-                                    ? "bg-purple-600 text-white border border-purple-700"
-                                    : "bg-purple-600 text-white border border-purple-700"
-                              }`}
-                            >
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-600/80 text-white border border-purple-500">
                               {currentAnime.subDubStatus}
                             </span>
                           )}
+                          {currentAnime.releaseYear && (
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-800/60 text-slate-300 border border-slate-700">
+                              {currentAnime.releaseYear}
+                            </span>
+                          )}
                         </div>
-
-                        {/* Title */}
-                        <h2 className="text-sm font-bold text-white line-clamp-2 leading-tight">
-                          {currentAnime.title}
-                        </h2>
-
-                        {/* Year */}
-                        {currentAnime.releaseYear && (
-                          <p className="text-xs text-slate-300">
-                            {currentAnime.releaseYear}
-                          </p>
-                        )}
                       </div>
 
-                      {/* Watch Now Button - CHANGED TO PURPLE */}
+                      {/* Watch Now Button */}
                       <button
                         onClick={() => onAnimeSelect(currentAnime)}
-                        className="mt-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold text-xs shadow-md shadow-purple-500/30 hover:from-purple-500 hover:to-purple-700 transition-all duration-300"
+                        className="mt-3 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold text-sm shadow-lg shadow-purple-500/30 hover:from-purple-500 hover:to-purple-600 transition-all duration-300 active:scale-95"
                       >
                         Watch Now
                       </button>
@@ -183,29 +173,29 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-950/80 backdrop-blur-sm border border-slate-700/50 flex items-center justify-center text-white text-xs font-bold"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/90 backdrop-blur-sm border border-slate-700 flex items-center justify-center text-white text-sm font-bold hover:bg-slate-800 transition-all"
                       aria-label="Previous"
                     >
                       ←
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-950/80 backdrop-blur-sm border border-slate-700/50 flex items-center justify-center text-white text-xs font-bold"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/90 backdrop-blur-sm border border-slate-700 flex items-center justify-center text-white text-sm font-bold hover:bg-slate-800 transition-all"
                       aria-label="Next"
                     >
                       →
                     </button>
 
                     {/* Dots Indicator */}
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1 z-20">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                       {bannerAnimes.map((_, i) => (
                         <button
                           key={i}
                           onClick={() => setCurrentIndex(i)}
-                          className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                          className={`transition-all duration-300 ${
                             i === currentIndex 
-                              ? "w-3 bg-purple-500"
-                              : "bg-slate-600/80 hover:bg-slate-500"
+                              ? "w-5 h-1.5 bg-purple-500 rounded-full"
+                              : "w-1.5 h-1.5 bg-slate-600/80 rounded-full hover:bg-slate-500"
                           }`}
                         />
                       ))}
@@ -216,99 +206,99 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
             </div>
           </div>
 
-          {/* PC VIEW - Banner */}
+          {/* PC VIEW - Banner with even smaller inner card */}
           <div className="hidden md:block">
             <div
-              className="relative overflow-hidden bg-slate-900/50 shadow-lg"
+              className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 shadow-2xl rounded-2xl"
               onMouseEnter={() => setIsAutoPlaying(false)}
               onMouseLeave={() => setIsAutoPlaying(true)}
             >
-              <div className="relative h-[380px]">
-                {/* Background Image with Blur */}
+              {/* Banner height same - 330px */}
+              <div className="relative h-[330px]">
+                {/* Background with cleaner overlay */}
                 <div className="absolute inset-0">
                   <img
-                    src={optimizeImageUrl(currentAnime.thumbnail, 1200, 450)}
+                    src={optimizeImageUrl(currentAnime.thumbnail, 1400, 400)}
                     alt={currentAnime.title}
-                    className="w-full h-full object-cover blur-sm scale-110 opacity-50"
+                    className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
+                  {/* Clean Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
                 </div>
 
-                {/* Content - PC Layout */}
+                {/* Content - PC Layout with EVEN SMALLER anime card */}
                 <div className="relative z-10 h-full flex items-center px-10">
                   <div className="flex items-center gap-8 w-full h-full">
-                    {/* Thumbnail - Larger on PC */}
-                    <div className="relative w-64 flex-shrink-0 h-full">
-                      <div className="relative h-full rounded-xl overflow-hidden shadow-2xl shadow-blue-500/20 ring-2 ring-blue-500/30">
-                        <img
-                          src={optimizeImageUrl(currentAnime.thumbnail, 320, 480)}
-                          alt={currentAnime.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                    {/* Thumbnail - EVEN SMALLER CARD */}
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute -inset-1.5">
+                        <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-transparent blur-xl opacity-50"></div>
+                      </div>
+                      {/* Container with SMALLER width - changed from w-56 to w-48 */}
+                      <div className="relative w-48">
+                        <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-purple-900/30 ring-2 ring-purple-500/30 aspect-[2/3]">
+                          <img
+                            src={optimizeImageUrl(currentAnime.thumbnail, 192, 288)}  // Reduced from 224,336
+                            alt={currentAnime.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 py-4 h-full flex flex-col justify-between">
+                    {/* Info - Adjusted for smaller card */}
+                    <div className="flex-1 min-w-0 py-4 h-full flex flex-col justify-center">
                       {/* Top Section */}
-                      <div className="space-y-4">
-                        {/* Status and Year Badges - EXACT SAME POSITION AS BEFORE */}
-                        <div className="flex flex-wrap gap-3">
+                      <div className="space-y-3">
+                        {/* Anime Title - Slightly smaller font */}
+                        <div>
+                          <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-lg">
+                            {currentAnime.title}
+                          </h2>
+                        </div>
+
+                        {/* Badges - Smaller padding */}
+                        <div className="flex flex-wrap gap-1.5">
                           {currentAnime.status && (
                             <span
-                              className={`px-3 py-1.5 rounded-lg text-base font-bold ${
+                              className={`px-2.5 py-1 rounded text-xs font-bold ${
                                 currentAnime.status === "Ongoing"
-                                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                  ? "bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 border border-emerald-500/30"
+                                  : "bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-300 border border-blue-500/30"
                               }`}
                             >
                               {currentAnime.status}
                             </span>
                           )}
                           {currentAnime.releaseYear && (
-                            <span className="px-3 py-1.5 rounded-lg text-base font-bold bg-slate-700/50 text-slate-300 border border-slate-600/30">
+                            <span className="px-2.5 py-1 rounded text-xs font-bold bg-gradient-to-r from-slate-800/40 to-slate-900/40 text-slate-300 border border-slate-700">
                               {currentAnime.releaseYear}
                             </span>
                           )}
                           {currentAnime.subDubStatus && (
-                            <span
-                              className={`px-3 py-1.5 rounded-lg text-base font-bold ${
-                                currentAnime.subDubStatus === "Hindi Dub"
-                                  ? "bg-purple-600 text-white border border-purple-700"
-                                  : currentAnime.subDubStatus === "Hindi Sub"
-                                    ? "bg-purple-600 text-white border border-purple-700"
-                                    : "bg-purple-600 text-white border border-purple-700"
-                              }`}
-                            >
+                            <span className="px-2.5 py-1 rounded text-xs font-bold bg-gradient-to-r from-purple-600 to-purple-700 text-white border border-purple-500">
                               {currentAnime.subDubStatus}
                             </span>
                           )}
                         </div>
 
-                        {/* Anime Title - Larger on PC */}
-                        <div>
-                          <h2 className="text-3xl font-bold text-white leading-tight">
-                            {currentAnime.title}
-                          </h2>
-                        </div>
-
-                        {/* Description - Only on PC */}
+                        {/* Description - Smaller font */}
                         {currentAnime.description && (
-                          <p className="text-slate-300 text-base line-clamp-2">
+                          <p className="text-slate-300 text-xs leading-relaxed max-w-2xl line-clamp-2">
                             {currentAnime.description}
                           </p>
                         )}
 
-                        {/* Genres - Only on PC */}
+                        {/* Genres - Smaller */}
                         {currentAnime.genreList && currentAnime.genreList.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {currentAnime.genreList.slice(0, 4).map((genre, i) => (
                               <span
                                 key={i}
-                                className="px-2.5 py-1 rounded-md text-sm bg-slate-800/60 text-slate-300 border border-slate-700/50"
+                                className="px-2 py-0.5 rounded text-xs bg-slate-800/40 text-slate-300 border border-slate-700 hover:bg-slate-700/50 transition-colors"
                               >
                                 {genre}
                               </span>
@@ -317,47 +307,48 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                         )}
                       </div>
 
-                      {/* Bottom Section: Watch Now Button - CHANGED TO PURPLE */}
-                      <div className="mt-4">
+                      {/* Bottom Section: Watch Now Button - Slightly smaller */}
+                      <div className="mt-5">
                         <button
                           onClick={() => onAnimeSelect(currentAnime)}
-                          className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 text-white font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300 text-lg"
+                          className="group relative px-5 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold shadow-xl shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-300 text-sm active:scale-95"
                         >
-                          Watch Now
+                          <span className="relative z-10">Watch Now</span>
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Navigation Arrows - Only show if multiple banner animes */}
+                {/* Navigation Arrows - Slightly smaller to match */}
                 {bannerAnimes.length > 1 && (
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950/80 backdrop-blur-sm border border-slate-700/50 flex items-center justify-center text-white hover:bg-slate-800/90 transition-all z-20 text-xl font-bold"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 backdrop-blur-sm border border-slate-700 flex items-center justify-center text-white hover:bg-slate-800 hover:scale-110 transition-all z-20 text-base font-bold shadow-lg"
                       aria-label="Previous"
                     >
                       ←
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-950/80 backdrop-blur-sm border border-slate-700/50 flex items-center justify-center text-white hover:bg-slate-800/90 transition-all z-20 text-xl font-bold"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 backdrop-blur-sm border border-slate-700 flex items-center justify-center text-white hover:bg-slate-800 hover:scale-110 transition-all z-20 text-base font-bold shadow-lg"
                       aria-label="Next"
                     >
                       →
                     </button>
 
-                    {/* Dots Indicator - CHANGED TO PURPLE */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {/* Dots Indicator - Smaller */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                       {bannerAnimes.map((_, i) => (
                         <button
                           key={i}
                           onClick={() => setCurrentIndex(i)}
-                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          className={`transition-all duration-300 ${
                             i === currentIndex 
-                              ? "w-6 bg-purple-500"
-                              : "bg-slate-600/80 hover:bg-slate-500"
+                              ? "w-5 h-1.5 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full"
+                              : "w-1.5 h-1.5 bg-slate-700 rounded-full hover:bg-slate-600 hover:w-2"
                           }`}
                         />
                       ))}
@@ -372,10 +363,10 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
 
       {/* LATEST ANIME TITLE SECTION - Same for both */}
       <div className="px-3 sm:px-4 md:px-5">
-        {/* Latest Anime Title - REMOVED JUSTIFY-BETWEEN AND VIEW ALL BUTTON */}
+        {/* Latest Anime Title */}
         <div className="flex items-center mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-1 h-5 sm:h-6 bg-purple-500 rounded-full"></div>
+            <div className="w-1 h-5 sm:h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
               Latest Anime
             </h2>
@@ -447,31 +438,32 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                       />
                       
                       {/* Status Badge */}
-                      <div className="absolute top-0 left-2 z-10">
-                        <span className="bg-purple-600 text-white text-[11px] font-medium px-2 py-0.5 rounded-md shadow-md whitespace-nowrap">
+                      <div className="absolute top-2 left-2 z-10">
+                        <span className="bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-medium px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap">
                           {anime.contentType || 'Anime'}
                         </span>
                       </div>
                       
                       {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-colors duration-300 group-hover:from-black/95 flex flex-col justify-end p-2 sm:p-3 md:p-4">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent transition-colors duration-300 group-hover:from-black/97 flex flex-col justify-end p-2 sm:p-3 md:p-4">
                         <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
-                          <h3 className="text-white font-bold line-clamp-2 mb-1 text-xs sm:text-sm md:text-base leading-tight drop-shadow-md">
+                          <h3 className="text-white font-bold line-clamp-2 mb-1.5 text-xs sm:text-sm md:text-base leading-tight drop-shadow-lg">
                             {anime.title}
                           </h3>
                           <div className="flex justify-between items-center">
                             <p className="text-slate-300 text-xs sm:text-sm">
                               {anime.releaseYear || 'N/A'}
                             </p>
-                            <span className="bg-purple-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
+                            <span className="bg-gradient-to-r from-purple-600/90 to-purple-700/90 text-white text-xs font-medium px-2 py-1 rounded-md shadow-md whitespace-nowrap">
                               {anime.subDubStatus || 'Unknown'}
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Hover Border */}
-                      <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-500 rounded-lg transition-all duration-300" />
+                      {/* Hover Effect */}
+                      <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-500/50 rounded-lg transition-all duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
                   </div>
                 </SwiperSlide>
