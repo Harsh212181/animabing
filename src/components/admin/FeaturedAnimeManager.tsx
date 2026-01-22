@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { Anime } from '../../types';
 
 interface FeaturedAnimeManagerProps {}
@@ -392,7 +392,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+      <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950 text-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="relative">
@@ -400,7 +400,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
               <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-pink-500 opacity-75" style={{ animationDirection: 'reverse' }}></div>
             </div>
             <p className="mt-6 text-xl font-semibold">Loading Anime Collection</p>
-            <p className="mt-2 text-gray-400">{apiStatus}</p>
+            <p className="mt-2 text-purple-400">{apiStatus}</p>
           </div>
         </div>
       </div>
@@ -408,48 +408,48 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950 text-white p-4 md:p-6">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
           Featured Anime Manager
         </h1>
-        <p className="text-gray-400 mt-2">Manage your featured anime collection for the homepage carousel</p>
+        <p className="text-purple-400 mt-2">Manage your featured anime collection for the homepage carousel</p>
       </div>
 
       {/* Stats Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 shadow-xl">
+        <div className="bg-gradient-to-br from-purple-800/80 to-purple-900/80 backdrop-blur-sm rounded-2xl border border-purple-700/50 p-6 shadow-xl">
           <div className="flex items-center">
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 mr-4">
               <span className="text-2xl">🎬</span>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Total Anime</p>
-              <p className="text-2xl font-bold">{allAnimes.length}</p>
+              <p className="text-sm text-purple-400">Total Anime</p>
+              <p className="text-2xl font-bold text-purple-300">{allAnimes.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 shadow-xl">
+        <div className="bg-gradient-to-br from-purple-800/80 to-purple-900/80 backdrop-blur-sm rounded-2xl border border-purple-700/50 p-6 shadow-xl">
           <div className="flex items-center">
             <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mr-4">
               <span className="text-2xl">⭐</span>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Featured Anime</p>
-              <p className="text-2xl font-bold">{featuredAnimes.length}<span className="text-sm text-gray-400 ml-2">/ 24 max</span></p>
+              <p className="text-sm text-purple-400">Featured Anime</p>
+              <p className="text-2xl font-bold text-blue-300">{featuredAnimes.length}<span className="text-sm text-purple-400 ml-2">/ 24 max</span></p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 shadow-xl">
+        <div className="bg-gradient-to-br from-purple-800/80 to-purple-900/80 backdrop-blur-sm rounded-2xl border border-purple-700/50 p-6 shadow-xl">
           <div className="flex items-center">
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 mr-4">
               <span className="text-2xl">🔍</span>
             </div>
             <div>
-              <p className="text-sm text-gray-400">API Status</p>
+              <p className="text-sm text-purple-400">API Status</p>
               <p className={`text-sm font-semibold ${apiStatus.includes('✅') ? 'text-green-400' : apiStatus.includes('❌') ? 'text-red-400' : 'text-yellow-400'}`}>
                 {apiStatus}
               </p>
@@ -463,23 +463,23 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">Featured Collection</h2>
-            <p className="text-gray-400 text-sm mt-1">Drag and drop to reorder featured anime</p>
+            <p className="text-purple-400 text-sm mt-1">Drag and drop to reorder featured anime</p>
           </div>
-          <span className="px-4 py-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-sm">
+          <span className="px-4 py-2 bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-full text-sm text-purple-300">
             {featuredAnimes.length} Featured
           </span>
         </div>
         
         {featuredAnimes.length === 0 ? (
-          <div className="text-center py-16 bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm rounded-2xl border-2 border-dashed border-gray-700/50">
+          <div className="text-center py-16 bg-gradient-to-br from-purple-800/40 to-purple-900/40 backdrop-blur-sm rounded-2xl border-2 border-dashed border-purple-700/50">
             <div className="text-6xl mb-4 opacity-30">🎬</div>
-            <h3 className="text-xl font-semibold text-gray-300 mb-2">No Featured Anime Yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
+            <h3 className="text-xl font-semibold text-purple-300 mb-2">No Featured Anime Yet</h3>
+            <p className="text-purple-500 max-w-md mx-auto mb-6">
               Start building your featured collection by adding anime from the library below
             </p>
             <button
               onClick={() => document.getElementById('add-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg"
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30"
             >
               Add Anime to Featured
             </button>
@@ -489,7 +489,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
             {featuredAnimes.map((anime, index) => (
               <div 
                 key={getAnimeId(anime)} 
-                className="group relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 border border-gray-700/50 hover:border-purple-500/50"
+                className="group relative bg-gradient-to-br from-purple-800 to-purple-900 rounded-2xl overflow-hidden shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 border border-purple-700/50 hover:border-purple-500/50"
               >
                 {/* Featured Badge */}
                 <div className="absolute top-3 left-3 z-20">
@@ -515,7 +515,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                     {index > 0 && (
                       <button
                         onClick={() => reorderFeatured(index, index - 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-900/90 hover:bg-blue-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/30"
+                        className="w-8 h-8 flex items-center justify-center bg-purple-900/90 hover:bg-blue-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/30"
                         title="Move up"
                       >
                         <span className="text-xs">↑</span>
@@ -524,7 +524,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                     {index < featuredAnimes.length - 1 && (
                       <button
                         onClick={() => reorderFeatured(index, index + 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-900/90 hover:bg-blue-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/30"
+                        className="w-8 h-8 flex items-center justify-center bg-purple-900/90 hover:bg-blue-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/30"
                         title="Move down"
                       >
                         <span className="text-xs">↓</span>
@@ -532,7 +532,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                     )}
                     <button
                       onClick={() => removeFromFeatured(getAnimeId(anime))}
-                      className="w-8 h-8 flex items-center justify-center bg-gray-900/90 hover:bg-red-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-red-500/30"
+                      className="w-8 h-8 flex items-center justify-center bg-purple-900/90 hover:bg-red-600 backdrop-blur-sm text-white rounded-lg transition-all shadow-lg hover:shadow-red-500/30"
                       title="Remove from featured"
                     >
                       <span className="text-xs">✕</span>
@@ -545,10 +545,10 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-white text-lg truncate mb-1">{anime.title}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex items-center gap-2 text-sm text-purple-400">
                         <span>{anime.releaseYear || 'N/A'}</span>
-                        <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-                        <span className="px-2 py-0.5 bg-gray-800 rounded text-xs">{anime.subDubStatus || 'Unknown'}</span>
+                        <span className="w-1 h-1 bg-purple-600 rounded-full"></span>
+                        <span className="px-2 py-0.5 bg-purple-800 rounded text-xs">{anime.subDubStatus || 'Unknown'}</span>
                       </div>
                     </div>
                   </div>
@@ -559,13 +559,13 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                       {anime.genreList.slice(0, 3).map((genre, idx) => (
                         <span 
                           key={idx} 
-                          className="px-2 py-1 bg-gray-800/60 text-gray-300 text-xs rounded-lg backdrop-blur-sm"
+                          className="px-2 py-1 bg-purple-800/60 text-purple-300 text-xs rounded-lg backdrop-blur-sm"
                         >
                           {genre}
                         </span>
                       ))}
                       {anime.genreList.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-900 text-gray-500 text-xs rounded-lg">
+                        <span className="px-2 py-1 bg-purple-900 text-purple-500 text-xs rounded-lg">
                           +{anime.genreList.length - 3}
                         </span>
                       )}
@@ -574,8 +574,8 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
 
                   {/* Description (hover reveal) */}
                   {anime.description && (
-                    <div className="mt-3 pt-3 border-t border-gray-800">
-                      <p className="text-gray-400 text-sm line-clamp-2 group-hover:line-clamp-4 transition-all">
+                    <div className="mt-3 pt-3 border-t border-purple-800">
+                      <p className="text-purple-400 text-sm line-clamp-2 group-hover:line-clamp-4 transition-all">
                         {anime.description}
                       </p>
                     </div>
@@ -591,7 +591,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
       <div id="add-section">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">Add Anime to Featured</h2>
-          <p className="text-gray-400">Select anime from your collection to feature on the homepage</p>
+          <p className="text-purple-400">Select anime from your collection to feature on the homepage</p>
         </div>
 
         {/* Controls */}
@@ -603,12 +603,12 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                 placeholder="Search anime by title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-4 pl-12 pr-10 bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all"
+                className="w-full p-4 pl-12 pr-10 bg-gradient-to-br from-purple-800/50 to-purple-900/50 backdrop-blur-sm border border-purple-700/50 rounded-2xl text-white placeholder-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all"
               />
               {/* Fixed Search Icon */}
               <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
                 <svg 
-                  className="w-5 h-5 text-gray-400 group-hover:text-purple-400 transition-colors" 
+                  className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -624,11 +624,11 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-full transition-all group"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1.5 bg-purple-700/50 hover:bg-purple-600/50 rounded-full transition-all group"
                   title="Clear search"
                 >
                   <svg 
-                    className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" 
+                    className="w-4 h-4 text-purple-400 group-hover:text-white transition-colors" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -648,7 +648,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
           <div className="flex gap-3">
             <button
               onClick={handleForceRefresh}
-              className="px-6 py-4 flex items-center gap-2 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-500 hover:to-blue-600 text-white rounded-2xl font-medium transition-all transform hover:scale-105 shadow-lg"
+              className="px-6 py-4 flex items-center gap-2 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-500 hover:to-blue-600 text-white rounded-2xl font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/30"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -662,7 +662,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                 localStorage.setItem('animeList', JSON.stringify(sampleData));
                 setApiStatus('✅ Loaded sample data for testing');
               }}
-              className="px-6 py-4 flex items-center gap-2 bg-gradient-to-r from-green-600/90 to-emerald-700/90 hover:from-green-500 hover:to-emerald-600 text-white rounded-2xl font-medium transition-all transform hover:scale-105 shadow-lg"
+              className="px-6 py-4 flex items-center gap-2 bg-gradient-to-r from-green-600/90 to-emerald-700/90 hover:from-green-500 hover:to-emerald-600 text-white rounded-2xl font-medium transition-all transform hover:scale-105 shadow-lg shadow-green-500/30"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -674,17 +674,17 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
 
         {/* Stats Bar */}
         <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-xl">
+          <div className="flex items-center gap-2 px-4 py-2 bg-purple-800/50 rounded-xl">
             <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-            <span className="text-sm">Total: <strong>{allAnimes.length}</strong></span>
+            <span className="text-sm text-purple-300">Total: <strong className="text-white">{allAnimes.length}</strong></span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-xl">
+          <div className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 rounded-xl">
             <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-            <span className="text-sm">Featured: <strong>{featuredAnimes.length}</strong></span>
+            <span className="text-sm text-purple-300">Featured: <strong className="text-white">{featuredAnimes.length}</strong></span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-xl">
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-sm">Available: <strong>{filteredAnimes.length}</strong></span>
+            <span className="text-sm text-purple-300">Available: <strong className="text-white">{filteredAnimes.length}</strong></span>
           </div>
         </div>
 
@@ -694,7 +694,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
             {filteredAnimes.map(anime => (
               <div 
                 key={getAnimeId(anime)} 
-                className="group relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 border border-gray-700/50 hover:border-green-500/50 hover:-translate-y-1"
+                className="group relative bg-gradient-to-br from-purple-800 to-purple-900 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300 border border-purple-700/50 hover:border-green-500/50 hover:-translate-y-1"
               >
                 {/* Anime Image */}
                 <div className="relative h-48 overflow-hidden">
@@ -727,16 +727,16 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                   </h3>
                   
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-purple-400">
                       {anime.releaseYear || 'N/A'}
                     </span>
                     {/* Removed episodeCount display */}
                   </div>
 
                   {/* Quick Info */}
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                  <div className="flex items-center justify-between text-xs text-purple-500 mb-4">
                     <div className="flex items-center gap-1">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>Anime</span>
@@ -744,11 +744,11 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                     {/* Genre Preview */}
                     {anime.genreList && anime.genreList.length > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="truncate max-w-[80px] text-gray-400">
+                        <span className="truncate max-w-[80px] text-purple-400">
                           {anime.genreList[0]}
                         </span>
                         {anime.genreList.length > 1 && (
-                          <span className="text-gray-600">+{anime.genreList.length - 1}</span>
+                          <span className="text-purple-600">+{anime.genreList.length - 1}</span>
                         )}
                       </div>
                     )}
@@ -760,7 +760,7 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
                     disabled={featuredAnimes.length >= 24}
                     className={`w-full py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
                       featuredAnimes.length >= 24
-                        ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-purple-700 to-purple-800 text-purple-500 cursor-not-allowed'
                         : 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white shadow-lg hover:shadow-green-500/30'
                     }`}
                   >
@@ -785,27 +785,27 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm rounded-2xl border border-gray-700/50">
+          <div className="text-center py-20 bg-gradient-to-br from-purple-800/30 to-purple-900/30 backdrop-blur-sm rounded-2xl border border-purple-700/50">
             <div className="max-w-md mx-auto">
               <div className="text-7xl mb-6 opacity-20">🎭</div>
               {searchTerm ? (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-300 mb-3">No Matches Found</h3>
-                  <p className="text-gray-500 mb-8">
+                  <h3 className="text-2xl font-bold text-purple-300 mb-3">No Matches Found</h3>
+                  <p className="text-purple-500 mb-8">
                     No anime found for "<span className="text-purple-400">{searchTerm}</span>". Try a different search term.
                   </p>
                 </>
               ) : allAnimes.length === 0 ? (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-300 mb-3">No Anime Available</h3>
-                  <p className="text-gray-500 mb-8">
+                  <h3 className="text-2xl font-bold text-purple-300 mb-3">No Anime Available</h3>
+                  <p className="text-purple-500 mb-8">
                     Your anime database is empty. Try refreshing or loading sample data.
                   </p>
                 </>
               ) : (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-300 mb-3">All Anime Featured!</h3>
-                  <p className="text-gray-500 mb-8">
+                  <h3 className="text-2xl font-bold text-purple-300 mb-3">All Anime Featured!</h3>
+                  <p className="text-purple-500 mb-8">
                     Congratulations! All available anime are already in your featured collection.
                   </p>
                 </>
@@ -814,13 +814,13 @@ const FeaturedAnimeManager: React.FC<FeaturedAnimeManagerProps> = () => {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600/90 to-pink-600/90 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-medium transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600/90 to-pink-600/90 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/30"
                 >
                   Clear Search
                 </button>
                 <button
                   onClick={handleForceRefresh}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-medium transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/30"
                 >
                   Refresh Database
                 </button>

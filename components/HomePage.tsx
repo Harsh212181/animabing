@@ -1,4 +1,4 @@
-// components/HomePage.tsx - UPDATED WITH SEO
+ // components/HomePage.tsx - UPDATED WITH A6A6A6 TO PURPLE BACKGROUND
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Anime, FilterType, ContentTypeFilter } from '../src/types';
 import AnimeCard from './AnimeCard';
@@ -389,7 +389,8 @@ const HomePage: React.FC<Props> = ({
           description="Watch anime online for free in Hindi and English. HD quality streaming and downloads."
           keywords="anime, watch anime online, hindi anime, english anime"
         />
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+        {/* ✅ A6A6A6 को बैंगनी (Purple) में बदला गया */}
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 p-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {Array.from({ length: 18 }).map((_, i) => (
               <SkeletonLoader key={i} />
@@ -410,8 +411,9 @@ const HomePage: React.FC<Props> = ({
           description="Watch anime online for free in Hindi and English. HD quality streaming and downloads."
           keywords="anime, watch anime online, hindi anime, english anime"
         />
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-          <div className="text-center bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700">
+        {/* ✅ A6A6A6 को बैंगनी (Purple) में बदला गया */}
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 flex items-center justify-center p-4">
+          <div className="text-center bg-purple-800/80 backdrop-blur rounded-2xl p-8 border border-purple-700">
             <p className="text-red-400 text-xl mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
@@ -444,7 +446,8 @@ const HomePage: React.FC<Props> = ({
         <meta itemProp="url" content="https://animebing.in" />
       </div>
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* ✅ MAIN CONTAINER: A6A6A6 को बैंगनी (Purple) में बदला गया */}
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900">
         <style>{`
           @keyframes subtle-glow {
             0%, 100% {
@@ -569,7 +572,7 @@ const HomePage: React.FC<Props> = ({
                       ${
                         localFilter === btn.key
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg shadow-blue-500/40'
-                          : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700/90'
+                          : 'bg-purple-800/90 text-purple-300 border-purple-700 hover:bg-purple-700/90'
                       }
                     `}
                   >
@@ -583,7 +586,7 @@ const HomePage: React.FC<Props> = ({
           {/* Result */}
           {filteredAnime.length === 0 ? (
             <div className="text-center py-20">
-              <div className="bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-md mx-auto border border-slate-700">
+              <div className="bg-purple-800/60 backdrop-blur rounded-2xl p-10 max-w-md mx-auto border border-purple-700">
                 <div className="text-6xl mb-4">🔍</div>
                 <h2 className="text-2xl font-bold text-white mb-3">
                   {searchQuery ? 'No Results Found' : 'No Content'}
@@ -629,7 +632,7 @@ const HomePage: React.FC<Props> = ({
                     ></div>
                     
                     {/* Main Card Container */}
-                    <div className="card-hover-effect relative rounded-xl border border-slate-700/30 bg-gradient-to-b from-slate-900/95 to-slate-800/90 p-1.5 transition-all duration-300 overflow-hidden group-hover:border-transparent">
+                    <div className="card-hover-effect relative rounded-xl border border-purple-700/30 bg-gradient-to-b from-purple-900/95 to-purple-800/90 p-1.5 transition-all duration-300 overflow-hidden group-hover:border-transparent">
                       
                       {/* Subtle Shimmer Effect */}
                       <div className="shimmer-effect"></div>
@@ -643,7 +646,7 @@ const HomePage: React.FC<Props> = ({
                       ></div>
                       
                       {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-40 group-hover:opacity-30 transition-opacity duration-300"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 via-transparent to-transparent opacity-40 group-hover:opacity-30 transition-opacity duration-300"></div>
                       
                       {/* Subtle sparkle particles */}
                       <div className="absolute top-2 right-2 w-1 h-1 rounded-full sparkle-effect opacity-0 group-hover:opacity-30"
@@ -763,10 +766,10 @@ const HomePage: React.FC<Props> = ({
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div 
                       key={`skeleton-${i}`} 
-                      className="relative rounded-xl border border-slate-700/40 p-1.5 bg-gradient-to-b from-slate-900/80 to-slate-800/70 overflow-hidden"
+                      className="relative rounded-xl border border-purple-700/40 p-1.5 bg-gradient-to-b from-purple-900/80 to-purple-800/70 overflow-hidden"
                     >
                       {/* Skeleton shimmer effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-700/10 to-transparent animate-shimmer"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-700/10 to-transparent animate-shimmer"></div>
                       <SkeletonLoader />
                     </div>
                   ))}

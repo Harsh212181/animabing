@@ -1,4 +1,4 @@
-// App.tsx - UPDATED WITH ID + SLUG SUPPORT
+ // App.tsx - UPDATED WITH PURPLE THEME AND GREEN OUTLINE
 // ✅ ADS REMOVED + FIXED SEARCH RELOAD ISSUE + REMOVED SECRET CODE CONSOLE LOGS + GA4 ANALYTICS FIX
 // ✅ ID + SLUG SUPPORT ADDED
 
@@ -296,18 +296,32 @@ const MainApp: React.FC = () => {
 
   if (isAppLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0c1c] flex flex-col items-center justify-center p-4">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 flex flex-col items-center justify-center p-4">
+        <style>{`
+          @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+          }
+          .glow-green-border {
+            border: 2px solid rgba(115, 245, 138, 0.5);
+            box-shadow: 0 0 20px rgba(115, 245, 138, 0.3);
+          }
+        `}</style>
+        
+        <div className="text-center glow-green-border rounded-2xl p-8 bg-purple-800/50 backdrop-blur-sm">
           <div className="relative mb-8">
-            <div className="text-6xl mb-4 animate-bounce">🎬</div>
+            <div 
+              className="text-6xl mb-4 animate-bounce"
+              style={{ textShadow: '0 0 10px rgba(115, 245, 138, 0.5)' }}
+            >🎬</div>
             <h1 className="text-4xl font-bold text-white mb-2">
-              Anim<span className="text-purple-500">abing</span>
+              Anime<span className="text-green-400">bing</span>
             </h1>
-            <p className="text-slate-400">Your ultimate anime destination</p>
+            <p className="text-purple-300">Your ultimate anime destination</p>
           </div>
           <Spinner size="lg" text="Loading your anime world..." />
-          <div className="mt-8 bg-slate-800/50 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-slate-400 text-sm">
+          <div className="mt-8 bg-purple-800/50 rounded-lg p-4 max-w-md mx-auto border border-green-500/30">
+            <p className="text-purple-300 text-sm">
               • Fast Downloads<br/>
               • Hindi Dubbed & Subbed<br/>
               • English Subbed<br/>
@@ -328,7 +342,28 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="bg-[#0a0c1c] text-white min-h-screen font-sans">
+    <div className="bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 text-white min-h-screen font-sans">
+      <style>{`
+        @keyframes fadeInOut {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        .glow-green-border {
+          border: 2px solid rgba(115, 245, 138, 0.5);
+          box-shadow: 0 0 20px rgba(115, 245, 138, 0.3);
+        }
+        .hover-glow-green:hover {
+          box-shadow: 0 0 15px rgba(115, 245, 138, 0.5);
+          border-color: rgba(115, 245, 138, 0.7);
+        }
+        .border-green-custom {
+          border-color: #73F58A;
+        }
+        .border-green-custom-30 {
+          border-color: rgba(115, 245, 138, 0.3);
+        }
+      `}</style>
+      
       {/* ✅ GA4 ANALYTICS TRACKER - UTM FIX KA MANTRA */}
       <AnalyticsTracker />
       
@@ -340,36 +375,78 @@ const MainApp: React.FC = () => {
         onFilterAndNavigateHome={dummyFilterFunction}
         onContentTypeNavigate={dummyContentTypeFunction}
       />
+      
       <main className="container mx-auto px-4 py-8">
-        <Routes>
-          <Route path="/" element={
-            <HomePage 
-              onAnimeSelect={handleAnimeSelect} 
-              searchQuery={searchQuery} 
-              filter={filter}
-              contentType={contentType}
-            />
-          } />
-          
-          {/* ✅ Anime List Route */}
-          <Route path="/anime" element={
-            <AnimeListPage 
-              onAnimeSelect={handleAnimeSelect}
-            />
-          } />
-          
-          {/* ✅ FIXED: Anime Detail Route with ID/Slug Support */}
-          <Route path="/detail/:idOrSlug" element={<AnimeDetailWrapper />} />
-          
-          {/* ✅ FIXED: Both Download Routes Added */}
-          <Route path="/download" element={<DownloadRedirectPage />} />
-          <Route path="/download-redirect" element={<DownloadRedirectPage />} />
-          
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/dmca" element={<DMCA />} />
-          <Route path="/terms" element={<TermsAndConditions />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
+        <div 
+          className="rounded-xl p-2 mb-8 glow-green-border"
+          style={{
+            background: 'rgba(30, 41, 59, 0.5)',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <Routes>
+            <Route path="/" element={
+              <div className="rounded-lg overflow-hidden">
+                <HomePage 
+                  onAnimeSelect={handleAnimeSelect} 
+                  searchQuery={searchQuery} 
+                  filter={filter}
+                  contentType={contentType}
+                />
+              </div>
+            } />
+            
+            {/* ✅ Anime List Route */}
+            <Route path="/anime" element={
+              <div className="rounded-lg overflow-hidden">
+                <AnimeListPage 
+                  onAnimeSelect={handleAnimeSelect}
+                />
+              </div>
+            } />
+            
+            {/* ✅ FIXED: Anime Detail Route with ID/Slug Support */}
+            <Route path="/detail/:idOrSlug" element={
+              <div className="rounded-lg overflow-hidden">
+                <AnimeDetailWrapper />
+              </div>
+            } />
+            
+            {/* ✅ FIXED: Both Download Routes Added */}
+            <Route path="/download" element={
+              <div className="rounded-lg overflow-hidden">
+                <DownloadRedirectPage />
+              </div>
+            } />
+            <Route path="/download-redirect" element={
+              <div className="rounded-lg overflow-hidden">
+                <DownloadRedirectPage />
+              </div>
+            } />
+            
+            {/* Other Pages with Green Outline */}
+            <Route path="/privacy" element={
+              <div className="rounded-lg overflow-hidden glow-green-border">
+                <PrivacyPolicy />
+              </div>
+            } />
+            <Route path="/dmca" element={
+              <div className="rounded-lg overflow-hidden glow-green-border">
+                <DMCA />
+              </div>
+            } />
+            <Route path="/terms" element={
+              <div className="rounded-lg overflow-hidden glow-green-border">
+                <TermsAndConditions />
+              </div>
+            } />
+            <Route path="/contact" element={
+              <div className="rounded-lg overflow-hidden glow-green-border">
+                <Contact />
+              </div>
+            } />
+          </Routes>
+        </div>
       </main>
       
       <Footer />
@@ -377,25 +454,38 @@ const MainApp: React.FC = () => {
       
       {/* Secret Code Typing Hint */}
       {showCodeHint && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999]">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-cyan-500/50 rounded-xl p-4 shadow-2xl backdrop-blur-sm min-w-[300px]">
+        <div 
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] glow-green-border hover-glow-green"
+          style={{
+            background: 'rgba(30, 41, 59, 0.9)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '0.75rem'
+          }}
+        >
+          <div className="p-4 min-w-[300px]">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="bg-cyan-600/20 p-2 rounded-lg">
-                  <span className="text-cyan-400">🔐</span>
+                <div 
+                  className="p-2 rounded-lg"
+                  style={{
+                    background: 'rgba(115, 245, 138, 0.2)',
+                    border: '1px solid rgba(115, 245, 138, 0.3)'
+                  }}
+                >
+                  <span className="text-green-400">🔐</span>
                 </div>
                 <div>
-                  <div className="text-sm text-cyan-300 font-medium">Secret Code Active</div>
-                  <div className="text-xs text-slate-400">Type "2007harsh" for admin access</div>
+                  <div className="text-sm text-green-300 font-medium">Secret Code Active</div>
+                  <div className="text-xs text-purple-400">Type "2007harsh" for admin access</div>
                 </div>
               </div>
-              <div className="text-slate-500 text-sm">
+              <div className="text-purple-500 text-sm">
                 {typedText.length}/9
               </div>
             </div>
             
             <div className="mb-3">
-              <div className="text-xs text-slate-400 mb-1">Current typing:</div>
+              <div className="text-xs text-purple-400 mb-1">Current typing:</div>
               <div className="flex items-center gap-1">
                 {Array.from('2007harsh').map((char, index) => (
                   <div 
@@ -405,8 +495,13 @@ const MainApp: React.FC = () => {
                         ? typedText[index] === char
                           ? 'bg-green-600 text-white border border-green-400' 
                           : 'bg-red-600 text-white border border-red-400'
-                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        : 'bg-purple-800 text-purple-500 border border-purple-700'
                       }`}
+                    style={{
+                      boxShadow: index < typedText.length && typedText[index] === char 
+                        ? '0 0 10px rgba(115, 245, 138, 0.5)' 
+                        : 'none'
+                    }}
                   >
                     {char}
                   </div>
@@ -414,10 +509,16 @@ const MainApp: React.FC = () => {
               </div>
             </div>
             
-            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div 
+              className="w-full h-1.5 rounded-full overflow-hidden"
+              style={{ background: 'rgba(115, 245, 138, 0.1)' }}
+            >
               <div 
-                className="bg-gradient-to-r from-green-500 via-cyan-500 to-blue-500 h-full transition-all duration-300"
-                style={{ width: `${(typedText.length / 9) * 100}%` }}
+                className="h-full transition-all duration-300"
+                style={{ 
+                  width: `${(typedText.length / 9) * 100}%`,
+                  background: 'linear-gradient(90deg, #10b981, #34d399, #73F58A)'
+                }}
               ></div>
             </div>
           </div>
@@ -429,12 +530,15 @@ const MainApp: React.FC = () => {
         <div className="fixed bottom-4 left-4 z-50 animate-fade-in">
           <button
             onClick={() => setAdminView('login')}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
+            className="bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-500 hover:to-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 border border-green-400/50 hover:border-green-400"
+            style={{
+              boxShadow: '0 0 15px rgba(115, 245, 138, 0.3)'
+            }}
           >
             <span>⚙️</span>
             Admin Access
           </button>
-          <p className="text-xs text-slate-400 mt-1 bg-black/50 p-1 rounded">
+          <p className="text-xs text-purple-400 mt-1 bg-black/50 p-1 rounded border border-green-500/20">
             Press Ctrl+Shift+Alt to hide
           </p>
         </div>
