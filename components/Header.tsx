@@ -1,9 +1,10 @@
- // components/Header.tsx - UPDATED WITH GREEN OUTLINE #73F58A
+ // components/Header.tsx - UPDATED WITH SOCIAL LINKS IN MOBILE MENU
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { FilterType, ContentType } from '../src/types';
 import { SearchIcon } from './icons/SearchIcon';
 import { MenuIcon } from './icons/MenuIcon';
 import { CloseIcon } from './icons/CloseIcon';
+import axios from 'axios';
 
 interface HeaderProps {
   onSearchChange: (query: string) => void;
@@ -11,6 +12,14 @@ interface HeaderProps {
   onNavigate: (destination: 'home' | 'list') => void;
   onFilterAndNavigateHome: (filter: 'Hindi Dub' | 'Hindi Sub' | 'English Sub') => void;
   onContentTypeNavigate: (contentType: ContentType) => void;
+}
+
+interface SocialMedia {
+  platform: string;
+  url: string;
+  isActive: boolean;
+  icon: string;
+  displayName: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -25,10 +34,14 @@ const Header: React.FC<HeaderProps> = ({
   const [isNavigating, setIsNavigating] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [socialLinks, setSocialLinks] = useState<SocialMedia[]>([]);
   
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ API Base URL
+  const API_BASE = 'https://animabing.onrender.com';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,6 +62,56 @@ const Header: React.FC<HeaderProps> = ({
       }
     };
   }, []);
+
+  // ✅ Fetch social links on component mount
+  useEffect(() => {
+    fetchSocialLinks();
+  }, []);
+
+  const fetchSocialLinks = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/api/social`, {
+        timeout: 5000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const activeLinks = response.data.filter((link: SocialMedia) => link.isActive);
+        if (activeLinks.length > 0) {
+          setSocialLinks(activeLinks);
+        }
+      }
+    } catch (error) {
+      // Fallback to default social links
+      console.log('Using default social links in header');
+      setSocialLinks([
+        {
+          platform: 'facebook',
+          url: 'https://www.facebook.com/animebing',
+          isActive: true,
+          icon: 'facebook',
+          displayName: 'Facebook'
+        },
+        {
+          platform: 'instagram',
+          url: 'https://www.instagram.com/animebing',
+          isActive: true,
+          icon: 'instagram',
+          displayName: 'Instagram'
+        },
+        {
+          platform: 'telegram',
+          url: 'https://t.me/animebing',
+          isActive: true,
+          icon: 'telegram',
+          displayName: 'Telegram'
+        }
+      ]);
+    }
+  };
 
   const handleSearchInputChange = useCallback((value: string) => {
     setLocalSearchQuery(value);
@@ -134,6 +197,44 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  // ✅ Social Icon Component (same as Footer)
+  const SocialIcon = ({ platform, className = "w-5 h-5" }: { platform: string; className?: string }) => {
+    switch (platform) {
+      case 'facebook':
+        return (
+          <svg className={className} fill="#1877F2" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+        );
+      case 'instagram':
+        return (
+          <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="instagram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fdf497"/>
+                <stop offset="30%" stopColor="#fd5949"/>
+                <stop offset="60%" stopColor="#d6249f"/>
+                <stop offset="100%" stopColor="#285AEB"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="url(#instagram-gradient)"/>
+          </svg>
+        );
+      case 'telegram':
+        return (
+          <svg className={className} fill="#0088CC" viewBox="0 0 24 24">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.139l-1.671 7.894c-.236 1.001-.837 1.248-1.697.775l-4.688-3.454-2.26 2.178c-.249.249-.459.459-.935.459l.336-4.773 8.665-5.515c.387-.247.741-.112.45.141l-7.07 6.389-3.073-.967c-1.071-.336-1.092-1.071.223-1.585l12.18-4.692c.892-.336 1.674.223 1.383 1.383z"/>
+          </svg>
+        );
+      default:
+        return (
+          <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2 16h-2v-6h2v6zm-1-6.891c-.607 0-1.1-.496-1.1-1.109 0-.612.492-1.109 1.1-1.109s1.1.497 1.1 1.109c0 .613-.493 1.109-1.1 1.109zm8 6.891h-1.998v-2.861c0-1.881-2.002-1.722-2.002 0v2.861h-2v-6h2v1.093c.872-1.616 4-1.736 4 1.548v3.359z"/>
+          </svg>
+        );
+    }
+  };
+
   const NavigationLoader = () => (
     isNavigating ? (
       <div className="fixed inset-0 bg-purple-900/95 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -205,12 +306,15 @@ const Header: React.FC<HeaderProps> = ({
           border-color: #73F58A;
         }
         
-        /* Enhanced glow effect for green outline */
+        /* Enhanced glow effect for green outline - ONLY ON HOVER/ACTIVE */
         .glow-green {
           box-shadow: 
-            0 0 5px rgba(115, 245, 138, 0.5),
-            0 0 10px rgba(115, 245, 138, 0.3),
-            0 0 15px rgba(115, 245, 138, 0.1);
+            0 0 5px rgba(115, 245, 138, 0.3),
+            0 0 10px rgba(115, 245, 138, 0.1);
+        }
+        
+        .hover-glow-green {
+          transition: box-shadow 0.3s ease, transform 0.2s ease;
         }
         
         .hover-glow-green:hover {
@@ -218,15 +322,29 @@ const Header: React.FC<HeaderProps> = ({
             0 0 10px rgba(115, 245, 138, 0.6),
             0 0 20px rgba(115, 245, 138, 0.4),
             0 0 30px rgba(115, 245, 138, 0.2);
-          transition: box-shadow 0.3s ease;
+          transform: translateY(-2px);
+        }
+        
+        .hover-glow-green:active {
+          box-shadow: 
+            0 0 15px rgba(115, 245, 138, 0.8),
+            0 0 25px rgba(115, 245, 138, 0.6),
+            0 0 35px rgba(115, 245, 138, 0.4);
+          transform: translateY(0);
         }
         
         /* Search section specific styles */
         .search-container {
-          border: 2px solid #73F58A;
+          border: 2px solid rgba(115, 245, 138, 0.5);
           border-radius: 0.75rem;
           background: rgba(30, 41, 59, 0.7);
           backdrop-filter: blur(10px);
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .search-container:hover {
+          border-color: #73F58A;
+          box-shadow: 0 0 15px rgba(115, 245, 138, 0.3);
         }
         
         .search-input {
@@ -249,6 +367,64 @@ const Header: React.FC<HeaderProps> = ({
           border: 1px solid #73F58A;
           box-shadow: 0 0 10px rgba(115, 245, 138, 0.4);
         }
+        
+        /* Anime List Button - FIXED: No continuous glow */
+        .anime-list-btn {
+          border: 2px solid rgba(115, 245, 138, 0.5);
+          background: linear-gradient(135deg, #7c3aed 0%, #10b981 100%);
+          transition: all 0.3s ease;
+        }
+        
+        .anime-list-btn:hover {
+          border: 2px solid #73F58A;
+          box-shadow: 
+            0 0 15px rgba(115, 245, 138, 0.6),
+            0 0 25px rgba(115, 245, 138, 0.4);
+          transform: translateY(-2px);
+        }
+        
+        .anime-list-btn:active {
+          transform: translateY(0);
+          box-shadow: 
+            0 0 20px rgba(115, 245, 138, 0.8),
+            0 0 30px rgba(115, 245, 138, 0.6);
+        }
+        
+        /* Mobile menu specific */
+        .mobile-menu-container {
+          max-height: 85vh;
+          overflow-y: auto;
+        }
+        
+        /* Custom scrollbar for mobile menu */
+        .mobile-menu-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .mobile-menu-container::-webkit-scrollbar-track {
+          background: rgba(115, 245, 138, 0.1);
+          border-radius: 3px;
+        }
+        
+        .mobile-menu-container::-webkit-scrollbar-thumb {
+          background: rgba(115, 245, 138, 0.5);
+          border-radius: 3px;
+        }
+        
+        .mobile-menu-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(115, 245, 138, 0.7);
+        }
+        
+        /* Social links button for mobile */
+        .social-button-mobile {
+          border: 1px solid rgba(115, 245, 138, 0.3);
+          transition: all 0.3s ease;
+        }
+        
+        .social-button-mobile:hover {
+          border: 1px solid #73F58A;
+          box-shadow: 0 0 10px rgba(115, 245, 138, 0.4);
+        }
       `}</style>
       
       <header 
@@ -262,15 +438,13 @@ const Header: React.FC<HeaderProps> = ({
         `}
         style={{
           borderBottom: '3px solid #73F58A',
-          borderBottomWidth: '3px',
-          borderBottomStyle: 'solid',
-          boxShadow: '0 4px 20px rgba(115, 245, 138, 0.3)'
+          boxShadow: '0 4px 20px rgba(115, 245, 138, 0.2)'
         }}
       >
         <div className="container mx-auto px-2 md:px-3 relative">
           <div className="flex justify-between items-center h-12 md:h-16">
             
-            {/* Logo with Skull Emoji - Now with green outline */}
+            {/* Logo with Skull Emoji */}
             <button 
               onClick={() => handleNavClick('home')} 
               className="flex items-center space-x-2 group relative anime-button hover-glow-green"
@@ -303,19 +477,14 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </button>
 
-            {/* Desktop Navigation - Cleaner Layout with Green Outline */}
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">
               <div 
-                className="flex items-center space-x-4 bg-purple-800/50 backdrop-blur-sm rounded-lg px-3 py-2 search-container"
-                style={{
-                  border: '2px solid #73F58A',
-                  boxShadow: '0 0 20px rgba(115, 245, 138, 0.2)'
-                }}
+                className="flex items-center space-x-4 bg-purple-800/50 backdrop-blur-sm rounded-lg px-3 py-2 search-container hover-glow-green"
               >
                 <button 
                   onClick={() => handleNavClick('home')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   Home
@@ -324,8 +493,7 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Language Filters */}
                 <button 
                   onClick={() => handleFilterClick('Hindi Dub')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green whitespace-nowrap"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   Hindi Dub
@@ -333,8 +501,7 @@ const Header: React.FC<HeaderProps> = ({
                 
                 <button 
                   onClick={() => handleFilterClick('Hindi Sub')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green whitespace-nowrap"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   Hindi Sub
@@ -342,8 +509,7 @@ const Header: React.FC<HeaderProps> = ({
                 
                 <button 
                   onClick={() => handleFilterClick('English Sub')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green whitespace-nowrap"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   English Sub
@@ -352,8 +518,7 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Content Type */}
                 <button 
                   onClick={() => handleContentTypeClick('Movie')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green whitespace-nowrap"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   Movies
@@ -361,21 +526,16 @@ const Header: React.FC<HeaderProps> = ({
                 
                 <button 
                   onClick={() => handleContentTypeClick('Manga')} 
-                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button hover-glow-green whitespace-nowrap"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="px-3 py-1.5 rounded-md text-purple-300 hover:text-white hover:bg-green-500/20 transition-all duration-300 font-medium text-sm disabled:opacity-50 anime-button"
                   disabled={isNavigating}
                 >
                   Manga
                 </button>
                 
-                {/* Anime List Button with green accent */}
+                {/* Anime List Button */}
                 <button 
                   onClick={() => handleNavClick('list')} 
-                  className="px-4 py-1.5 rounded-md bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-500 hover:to-green-500 text-white transition-all duration-300 font-semibold text-sm disabled:opacity-50 border-green-custom-70 hover-glow-green"
-                  style={{ 
-                    border: '2px solid rgba(115, 245, 138, 0.7)',
-                    boxShadow: '0 0 15px rgba(115, 245, 138, 0.4)'
-                  }}
+                  className="px-4 py-1.5 rounded-md anime-list-btn text-white transition-all duration-300 font-semibold text-sm disabled:opacity-50"
                   disabled={isNavigating}
                 >
                   Anime List
@@ -383,18 +543,10 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </nav>
 
-            {/* Desktop Search Section - Enhanced with Green Outline */}
+            {/* Desktop Search Section */}
             <div className="hidden md:flex items-center">
               <div className="relative">
-                <div className="flex items-center search-container hover-glow-green"
-                     style={{
-                       border: '2px solid #73F58A',
-                       borderRadius: '0.75rem',
-                       padding: '0.25rem',
-                       background: 'rgba(30, 41, 59, 0.7)',
-                       backdropFilter: 'blur(10px)',
-                       boxShadow: '0 0 15px rgba(115, 245, 138, 0.2)'
-                     }}>
+                <div className="flex items-center search-container hover-glow-green">
                   <div className="absolute left-3">
                     <SearchIcon className="w-4 h-4 text-green-400" />
                   </div>
@@ -405,33 +557,16 @@ const Header: React.FC<HeaderProps> = ({
                     value={localSearchQuery}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-48 lg:w-56 bg-transparent text-white placeholder-green-300 text-sm rounded-lg focus:outline-none pl-10 pr-8 py-2 transition-all duration-300 search-input"
-                    style={{ 
-                      border: '1px solid rgba(115, 245, 138, 0.4)',
-                      outline: 'none'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.border = '2px solid #73F58A';
-                      e.target.style.boxShadow = '0 0 15px rgba(115, 245, 138, 0.4)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.border = '1px solid rgba(115, 245, 138, 0.4)';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className="w-48 lg:w-56 bg-transparent text-white placeholder-green-300 text-sm rounded-lg focus:outline-none pl-10 pr-8 py-2 search-input"
                     disabled={isNavigating}
                   />
                   {localSearchQuery && (
                     <button
                       onClick={handleClearSearch}
-                      className="absolute right-2 text-green-400 hover:text-white transition-colors"
+                      className="absolute right-2 text-green-400 hover:text-white transition-colors p-1 rounded-full bg-green-500/10"
                       type="button"
                       disabled={isNavigating}
                       aria-label="Clear search"
-                      style={{
-                        background: 'rgba(115, 245, 138, 0.1)',
-                        borderRadius: '50%',
-                        padding: '0.25rem'
-                      }}
                     >
                       <CloseIcon className="w-4 h-4" />
                     </button>
@@ -444,11 +579,7 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex md:hidden items-center space-x-2">
               <button 
                 onClick={toggleMobileSearch}
-                className="p-2 rounded-lg bg-purple-800/50 text-green-400 hover:text-white hover:bg-green-500/20 disabled:opacity-50 transition-all duration-300 border-green-custom-30 hover:border-green-custom hover-glow-green"
-                style={{ 
-                  border: '2px solid rgba(115, 245, 138, 0.3)',
-                  boxShadow: '0 0 10px rgba(115, 245, 138, 0.2)'
-                }}
+                className="p-2 rounded-lg bg-purple-800/50 text-green-400 hover:text-white hover:bg-green-500/20 disabled:opacity-50 transition-all duration-300 anime-button hover-glow-green"
                 disabled={isNavigating}
                 aria-label="Search"
               >
@@ -457,11 +588,7 @@ const Header: React.FC<HeaderProps> = ({
               
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                className="p-2 rounded-lg bg-purple-800/50 text-green-400 hover:text-white hover:bg-green-500/20 disabled:opacity-50 transition-all duration-300 border-green-custom-30 hover:border-green-custom hover-glow-green"
-                style={{ 
-                  border: '2px solid rgba(115, 245, 138, 0.3)',
-                  boxShadow: '0 0 10px rgba(115, 245, 138, 0.2)'
-                }}
+                className="p-2 rounded-lg bg-purple-800/50 text-green-400 hover:text-white hover:bg-green-500/20 disabled:opacity-50 transition-all duration-300 anime-button hover-glow-green"
                 disabled={isNavigating}
                 aria-label="Menu"
               >
@@ -470,19 +597,11 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Mobile Search Bar - Enhanced with Green Outline */}
+          {/* Mobile Search Bar */}
           {isMobileSearchOpen && (
             <div className="md:hidden mt-2 pb-3 animate-slideDown">
               <div className="relative">
-                <div className="flex items-center search-container hover-glow-green"
-                     style={{
-                       border: '2px solid #73F58A',
-                       borderRadius: '0.75rem',
-                       padding: '0.25rem',
-                       background: 'rgba(30, 41, 59, 0.7)',
-                       backdropFilter: 'blur(10px)',
-                       boxShadow: '0 0 15px rgba(115, 245, 138, 0.2)'
-                     }}>
+                <div className="flex items-center search-container hover-glow-green">
                   <div className="absolute left-3">
                     <SearchIcon className="w-5 h-5 text-green-400" />
                   </div>
@@ -493,49 +612,27 @@ const Header: React.FC<HeaderProps> = ({
                     value={localSearchQuery}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-transparent text-white placeholder-green-300 text-sm rounded-lg focus:outline-none pl-10 pr-16 py-2.5 transition-all duration-300 search-input"
-                    style={{ 
-                      border: '1px solid rgba(115, 245, 138, 0.4)',
-                      outline: 'none'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.border = '2px solid #73F58A';
-                      e.target.style.boxShadow = '0 0 15px rgba(115, 245, 138, 0.4)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.border = '1px solid rgba(115, 245, 138, 0.4)';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className="w-full bg-transparent text-white placeholder-green-300 text-sm rounded-lg focus:outline-none pl-10 pr-16 py-2.5 search-input"
                     autoFocus
                     disabled={isNavigating}
                   />
                   {localSearchQuery && (
                     <button
                       onClick={handleClearSearch}
-                      className="absolute right-10 text-green-400 hover:text-white transition-colors"
+                      className="absolute right-10 text-green-400 hover:text-white transition-colors p-1 rounded-full bg-green-500/10"
                       type="button"
                       disabled={isNavigating}
                       aria-label="Clear search"
-                      style={{
-                        background: 'rgba(115, 245, 138, 0.1)',
-                        borderRadius: '50%',
-                        padding: '0.25rem'
-                      }}
                     >
                       <CloseIcon className="w-4 h-4" />
                     </button>
                   )}
                   <button
                     onClick={() => setIsMobileSearchOpen(false)}
-                    className="absolute right-3 text-green-400 hover:text-white transition-colors"
+                    className="absolute right-3 text-green-400 hover:text-white transition-colors p-1 rounded-full bg-green-500/10"
                     type="button"
                     disabled={isNavigating}
                     aria-label="Close search"
-                    style={{
-                      background: 'rgba(115, 245, 138, 0.1)',
-                      borderRadius: '50%',
-                      padding: '0.25rem'
-                    }}
                   >
                     <CloseIcon className="w-5 h-5" />
                   </button>
@@ -545,16 +642,13 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Mobile Menu - Updated Design with Green Outline */}
+        {/* Mobile Menu - WITH SOCIAL LINKS ADDED (ONLY MOBILE) */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 shadow-2xl shadow-black/50 animate-fadeIn glow-green"
+          <div className="md:hidden absolute top-full left-0 right-0 bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 shadow-2xl shadow-black/50 animate-fadeIn glow-green mobile-menu-container"
                style={{ 
-                 borderTop: '3px solid #73F58A',
-                 borderTopWidth: '3px',
-                 borderTopStyle: 'solid',
-                 boxShadow: '0 10px 30px rgba(115, 245, 138, 0.3)'
+                 borderTop: '3px solid #73F58A'
                }}>
-            <div className="container mx-auto px-2 py-4">
+            <div className="container mx-auto px-4 py-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <span 
@@ -574,34 +668,29 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
                 <button 
                   onClick={() => setIsMenuOpen(false)}
-                  className="p-2 rounded-lg bg-purple-800 text-green-400 hover:text-white transition-colors border-green-custom-30 hover:border-green-custom hover-glow-green"
-                  style={{ 
-                    border: '2px solid rgba(115, 245, 138, 0.3)',
-                    boxShadow: '0 0 10px rgba(115, 245, 138, 0.2)'
-                  }}
+                  className="p-2 rounded-lg bg-purple-800 text-green-400 hover:text-white transition-colors anime-button hover-glow-green"
                 >
                   <CloseIcon className="w-5 h-5" />
                 </button>
               </div>
 
-              <nav className="space-y-1">
+              <nav className="space-y-2">
                 <button 
                   onClick={() => handleNavClick('home')} 
-                  className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                  style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                  className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                   disabled={isNavigating}
                 >
                   <span>Home</span>
                   <span className="text-green-400">→</span>
                 </button>
                 
+                {/* Language Filters Section */}
                 <div className="pt-2">
-                  <h4 className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-2 px-1">Languages</h4>
-                  <div className="space-y-1">
+                  <h4 className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-3 px-1">Languages</h4>
+                  <div className="space-y-2">
                     <button 
                       onClick={() => handleFilterClick('Hindi Dub')} 
-                      className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                      style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                      className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                       disabled={isNavigating}
                     >
                       <span>Hindi Dub</span>
@@ -610,8 +699,7 @@ const Header: React.FC<HeaderProps> = ({
                     
                     <button 
                       onClick={() => handleFilterClick('Hindi Sub')} 
-                      className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                      style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                      className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                       disabled={isNavigating}
                     >
                       <span>Hindi Sub</span>
@@ -620,8 +708,7 @@ const Header: React.FC<HeaderProps> = ({
                     
                     <button 
                       onClick={() => handleFilterClick('English Sub')} 
-                      className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                      style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                      className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                       disabled={isNavigating}
                     >
                       <span>English Sub</span>
@@ -630,13 +717,13 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
                 </div>
                 
+                {/* Categories Section */}
                 <div className="pt-2">
-                  <h4 className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-2 px-1">Categories</h4>
-                  <div className="space-y-1">
+                  <h4 className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-3 px-1">Categories</h4>
+                  <div className="space-y-2">
                     <button 
                       onClick={() => handleContentTypeClick('Movie')} 
-                      className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                      style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                      className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                       disabled={isNavigating}
                     >
                       <span>Movies</span>
@@ -645,8 +732,7 @@ const Header: React.FC<HeaderProps> = ({
                     
                     <button 
                       onClick={() => handleContentTypeClick('Manga')} 
-                      className="w-full px-3 py-2.5 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
-                      style={{ border: '1px solid rgba(115, 245, 138, 0.3)' }}
+                      className="w-full px-4 py-3 rounded-lg bg-purple-800/50 text-purple-300 hover:bg-green-500/20 hover:text-white transition-all duration-300 font-medium disabled:opacity-50 anime-button hover-glow-green flex items-center justify-between"
                       disabled={isNavigating}
                     >
                       <span>Manga</span>
@@ -655,25 +741,47 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
                 </div>
                 
-                <div className="pt-3" style={{ borderTop: '2px solid rgba(115, 245, 138, 0.3)' }}>
+                {/* Anime List Button */}
+                <div className="pt-4 border-t border-green-500/30">
                   <button 
                     onClick={() => handleNavClick('list')} 
-                    className="w-full px-3 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-500 hover:to-green-500 text-white transition-all duration-300 font-semibold disabled:opacity-50 border-green-custom-70 hover-glow-green flex items-center justify-center space-x-2"
-                    style={{ 
-                      border: '2px solid rgba(115, 245, 138, 0.7)',
-                      boxShadow: '0 0 15px rgba(115, 245, 138, 0.4)'
-                    }}
+                    className="w-full px-4 py-3 rounded-lg anime-list-btn text-white transition-all duration-300 font-semibold disabled:opacity-50 flex items-center justify-center space-x-2 hover-glow-green"
                     disabled={isNavigating}
                   >
                     <span>Anime List</span>
-                    <span>→</span>
+                    <span className="text-lg">→</span>
                   </button>
                 </div>
+                
+                {/* ✅ SOCIAL LINKS SECTION - ONLY IN MOBILE MENU */}
+                {socialLinks.length > 0 && (
+                  <div className="pt-6 border-t border-green-500/30">
+                    <h4 className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-3 px-1 text-center">Follow Us</h4>
+                    <div className="flex justify-center space-x-4">
+                      {socialLinks.map(link => (
+                        <a
+                          key={link.platform}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          className="group bg-purple-800/50 hover:bg-green-500/30 text-green-400 hover:text-white p-3 rounded-xl transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-green-500/25 backdrop-blur-sm social-button-mobile"
+                          title={`Follow us on ${link.displayName}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(link.url, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <SocialIcon platform={link.platform} className="w-5 h-5" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </nav>
               
-              <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(115, 245, 138, 0.3)' }}>
+              <div className="mt-6 pt-4 border-t border-green-500/20">
                 <p className="text-center text-xs text-green-400 font-light">
-                  animebing.in
+                  animebing.in © {new Date().getFullYear()}
                 </p>
               </div>
             </div>

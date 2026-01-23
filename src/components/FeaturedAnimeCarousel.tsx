@@ -240,7 +240,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                       <div className="relative w-48">
                         <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-purple-900/30 ring-2 ring-purple-500/30 aspect-[2/3]">
                           <img
-                            src={optimizeImageUrl(currentAnime.thumbnail, 192, 288)}  // Reduced from 224,336
+                            src={optimizeImageUrl(currentAnime.thumbnail, 192, 288)}
                             alt={currentAnime.title}
                             className="w-full h-full object-cover"
                             loading="lazy"
@@ -437,9 +437,9 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                         loading="lazy"
                       />
                       
-                      {/* Status Badge */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <span className="bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-medium px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap">
+                      {/* Status Badge - SMALLER FONT */}
+                      <div className="absolute top-0.5 left-2 z-10">
+                        <span className="bg-gradient-to-r from-purple-600 to-purple-700 text-white text-[10px] font-medium px-2 py-0.5 rounded-md shadow-lg whitespace-nowrap">
                           {anime.contentType || 'Anime'}
                         </span>
                       </div>
@@ -454,7 +454,8 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                             <p className="text-slate-300 text-xs sm:text-sm">
                               {anime.releaseYear || 'N/A'}
                             </p>
-                            <span className="bg-gradient-to-r from-purple-600/90 to-purple-700/90 text-white text-xs font-medium px-2 py-1 rounded-md shadow-md whitespace-nowrap">
+                            {/* Sub/Dub Badge - SMALLER FONT */}
+                            <span className="bg-gradient-to-r from-purple-600/90 to-purple-700/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
                               {anime.subDubStatus || 'Unknown'}
                             </span>
                           </div>
