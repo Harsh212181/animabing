@@ -1,4 +1,4 @@
- // src/components/FeaturedAnimeCarousel.tsx - EVEN SMALLER INNER CARD
+ // src/components/FeaturedAnimeCarousel.tsx - FIXED IMAGE QUALITY
 "use client"
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
@@ -16,18 +16,40 @@ interface Props {
   onAnimeSelect: (anime: Anime) => void;
 }
 
+// FIXED IMAGE OPTIMIZATION FUNCTION - SAME AS HOMEPAGE
 const optimizeImageUrl = (url: string, width: number, height: number): string => {
   if (!url || !url.includes('cloudinary.com')) return url;
+  
+  try {
+    // Remove existing transformations and add optimized ones
+    const baseUrl = url.split('/upload/')[0];
+    const rest = url.split('/upload/')[1];
+    const imagePath = rest.split('/').slice(1).join('/');
+    
+    // ✅ SAME OPTIMIZATION AS HOMEPAGE: f_webp, q_auto:good
+    return `${baseUrl}/upload/f_webp,q_auto:good,w_${width},h_${height},c_fill/${imagePath}`;
+  } catch (error) {
+    console.error('Error optimizing image URL:', error);
+    return url;
+  }
+};
+
+// Generate srcset for responsive images - ADDED FOR BETTER QUALITY
+const generateSrcSet = (url: string, baseWidth: number, baseHeight: number): string => {
+  if (!url || !url.includes('cloudinary.com')) return '';
   
   try {
     const baseUrl = url.split('/upload/')[0];
     const rest = url.split('/upload/')[1];
     const imagePath = rest.split('/').slice(1).join('/');
     
-    return `${baseUrl}/upload/f_webp,q_auto:best,w_${width},h_${height},c_fill,g_auto/${imagePath}`;
+    return `
+      ${baseUrl}/upload/f_webp,q_auto:good,w_${baseWidth},h_${baseHeight},c_fill/${imagePath} ${baseWidth}w,
+      ${baseUrl}/upload/f_webp,q_auto:good,w_${baseWidth * 2},h_${baseHeight * 2},c_fill/${imagePath} ${baseWidth * 2}w
+    `;
   } catch (error) {
-    console.error('Error optimizing image URL:', error);
-    return url;
+    console.error('Error generating srcset:', error);
+    return '';
   }
 };
 
@@ -87,7 +109,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
       {/* BANNER SECTION - Only show if we have banner anime */}
       {currentAnime && (
         <>
-          {/* MOBILE VIEW - Banner (UNCHANGED) */}
+          {/* MOBILE VIEW - Banner */}
           <div className="block md:hidden">
             <div
               className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 shadow-2xl rounded-xl"
@@ -97,8 +119,15 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
               <div className="relative h-[200px]">
                 {/* Background with gradient overlay */}
                 <div className="absolute inset-0">
+                  {/* ✅ FIXED IMAGE URL WITH BETTER QUALITY */}
                   <img
-                    src={optimizeImageUrl(currentAnime.thumbnail, 600, 300)}
+                    src={optimizeImageUrl(currentAnime.thumbnail, 800, 400)}
+                    srcSet={`
+                      ${optimizeImageUrl(currentAnime.thumbnail, 400, 200)} 400w,
+                      ${optimizeImageUrl(currentAnime.thumbnail, 800, 400)} 800w,
+                      ${optimizeImageUrl(currentAnime.thumbnail, 1200, 600)} 1200w
+                    `}
+                    sizes="100vw"
                     alt={currentAnime.title}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -114,8 +143,11 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                     {/* Thumbnail with better shadow */}
                     <div className="relative w-28 flex-shrink-0">
                       <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-2xl shadow-purple-900/50 ring-2 ring-purple-500/30">
+                        {/* ✅ FIXED: Same optimization as HomePage */}
                         <img
                           src={optimizeImageUrl(currentAnime.thumbnail, 180, 270)}
+                          srcSet={generateSrcSet(currentAnime.thumbnail, 180, 270)}
+                          sizes="112px"
                           alt={currentAnime.title}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -206,22 +238,28 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
             </div>
           </div>
 
-          {/* PC VIEW - Banner with even smaller inner card */}
+          {/* PC VIEW - Banner with EVEN SMALLER INNER CARD */}
           <div className="hidden md:block">
             <div
               className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 shadow-2xl rounded-2xl"
               onMouseEnter={() => setIsAutoPlaying(false)}
               onMouseLeave={() => setIsAutoPlaying(true)}
             >
-              {/* Banner height same - 330px */}
               <div className="relative h-[330px]">
                 {/* Background with cleaner overlay */}
                 <div className="absolute inset-0">
+                  {/* ✅ FIXED: High quality banner image */}
                   <img
                     src={optimizeImageUrl(currentAnime.thumbnail, 1400, 400)}
+                    srcSet={`
+                      ${optimizeImageUrl(currentAnime.thumbnail, 700, 200)} 700w,
+                      ${optimizeImageUrl(currentAnime.thumbnail, 1400, 400)} 1400w,
+                      ${optimizeImageUrl(currentAnime.thumbnail, 2100, 600)} 2100w
+                    `}
+                    sizes="100vw"
                     alt={currentAnime.title}
                     className="w-full h-full object-cover"
-                    loading="lazy"
+                    loading="eager" // ✅ Banner image gets priority
                   />
                   {/* Clean Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent"></div>
@@ -236,11 +274,14 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                       <div className="absolute -inset-1.5">
                         <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-transparent blur-xl opacity-50"></div>
                       </div>
-                      {/* Container with SMALLER width - changed from w-56 to w-48 */}
+                      {/* Container with SMALLER width - w-48 (was w-56) */}
                       <div className="relative w-48">
                         <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-purple-900/30 ring-2 ring-purple-500/30 aspect-[2/3]">
+                          {/* ✅ FIXED: Same dimensions as HomePage */}
                           <img
                             src={optimizeImageUrl(currentAnime.thumbnail, 192, 288)}
+                            srcSet={generateSrcSet(currentAnime.thumbnail, 192, 288)}
+                            sizes="192px"
                             alt={currentAnime.title}
                             className="w-full h-full object-cover"
                             loading="lazy"
@@ -253,14 +294,14 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                     <div className="flex-1 min-w-0 py-4 h-full flex flex-col justify-center">
                       {/* Top Section */}
                       <div className="space-y-3">
-                        {/* Anime Title - Slightly smaller font */}
+                        {/* Anime Title */}
                         <div>
                           <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-lg">
                             {currentAnime.title}
                           </h2>
                         </div>
 
-                        {/* Badges - Smaller padding */}
+                        {/* Badges */}
                         <div className="flex flex-wrap gap-1.5">
                           {currentAnime.status && (
                             <span
@@ -285,14 +326,14 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                           )}
                         </div>
 
-                        {/* Description - Smaller font */}
+                        {/* Description */}
                         {currentAnime.description && (
                           <p className="text-slate-300 text-xs leading-relaxed max-w-2xl line-clamp-2">
                             {currentAnime.description}
                           </p>
                         )}
 
-                        {/* Genres - Smaller */}
+                        {/* Genres */}
                         {currentAnime.genreList && currentAnime.genreList.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {currentAnime.genreList.slice(0, 4).map((genre, i) => (
@@ -307,7 +348,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                         )}
                       </div>
 
-                      {/* Bottom Section: Watch Now Button - Slightly smaller */}
+                      {/* Bottom Section: Watch Now Button */}
                       <div className="mt-5">
                         <button
                           onClick={() => onAnimeSelect(currentAnime)}
@@ -321,7 +362,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                   </div>
                 </div>
 
-                {/* Navigation Arrows - Slightly smaller to match */}
+                {/* Navigation Arrows */}
                 {bannerAnimes.length > 1 && (
                   <>
                     <button
@@ -339,7 +380,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                       →
                     </button>
 
-                    {/* Dots Indicator - Smaller */}
+                    {/* Dots Indicator */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                       {bannerAnimes.map((_, i) => (
                         <button
@@ -361,7 +402,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
         </>
       )}
 
-      {/* LATEST ANIME TITLE SECTION - Same for both */}
+      {/* LATEST ANIME TITLE SECTION */}
       <div className="px-3 sm:px-4 md:px-5">
         {/* Latest Anime Title */}
         <div className="flex items-center mb-3 sm:mb-4">
@@ -373,7 +414,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
           </div>
         </div>
 
-        {/* Swiper Carousel for Latest Anime - Uses carouselAnimes (original order) */}
+        {/* Swiper Carousel for Latest Anime */}
         {carouselAnimes.length > 0 ? (
           <Swiper
             modules={[Autoplay, Pagination]}
@@ -413,7 +454,9 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
             className="featured-swiper rounded-lg"
           >
             {carouselAnimes.map((anime, index) => {
+              // ✅ FIXED: Same optimization as HomePage
               const optimizedThumbnail = optimizeImageUrl(anime.thumbnail, 193, 289);
+              const thumbnailSrcSet = generateSrcSet(anime.thumbnail, 193, 289);
 
               return (
                 <SwiperSlide key={anime.id || anime._id || index}>
@@ -430,14 +473,17 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                     }}
                   >
                     <div className="relative overflow-hidden rounded-lg aspect-[2/3] bg-gradient-to-br from-slate-800 to-slate-900">
+                      {/* ✅ FIXED: Added srcSet and proper sizes */}
                       <img
                         src={optimizedThumbnail}
+                        srcSet={thumbnailSrcSet}
+                        sizes="(max-width: 640px) 48vw, (max-width: 768px) 32vw, (max-width: 1024px) 24vw, (max-width: 1280px) 20vw, 193px"
                         alt={anime.title}
                         className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                         loading="lazy"
                       />
                       
-                      {/* Status Badge - SMALLER FONT */}
+                      {/* Status Badge */}
                       <div className="absolute top-0.5 left-2 z-10">
                         <span className="bg-gradient-to-r from-purple-600 to-purple-700 text-white text-[10px] font-medium px-2 py-0.5 rounded-md shadow-lg whitespace-nowrap">
                           {anime.contentType || 'Anime'}
@@ -454,7 +500,7 @@ const FeaturedAnimeCarousel: React.FC<Props> = ({ featuredAnimes, onAnimeSelect 
                             <p className="text-slate-300 text-xs sm:text-sm">
                               {anime.releaseYear || 'N/A'}
                             </p>
-                            {/* Sub/Dub Badge - SMALLER FONT */}
+                            {/* Sub/Dub Badge */}
                             <span className="bg-gradient-to-r from-purple-600/90 to-purple-700/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md shadow-md whitespace-nowrap">
                               {anime.subDubStatus || 'Unknown'}
                             </span>
