@@ -1,12 +1,18 @@
-// components/AnimeDetailPage.tsx - UPDATED WITH ID + SLUG SUPPORT
-import React, { useState, useEffect } from 'react';
+ // components/AnimeDetailPage.tsx - UPDATED WITHOUT EPISODE/MANGA/MOVIE COUNT IN HEADINGS
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Anime, Episode, Chapter } from '../src/types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import ReportButton from './ReportButton';
 import Spinner from './Spinner';
 import { AnimeDetailSkeleton } from './SkeletonLoader';
-import { getAnimeByIdOrSlug, getEpisodesByAnimeId, getChaptersByMangaId } from '../services/animeService'; // ✅ UPDATED IMPORT
-import SEO from '../src/components/SEO'; // ✅ SEO IMPORT ADDED
+import AnimeCard from './AnimeCard';
+import { 
+  getAnimeByIdOrSlug, 
+  getEpisodesByAnimeId, 
+  getChaptersByMangaId, 
+  getAnimePaginated 
+} from '../services/animeService';
+import SEO from '../src/components/SEO';
 
 // ✅ ADD DownloadLink interface locally since it might not be in types.ts
 interface DownloadLink {
@@ -19,21 +25,30 @@ interface DownloadLink {
 interface Props {
   anime: Anime | null;
   onBack: () => void;
+  onAnimeSelect: (anime: Anime) => void;
   isLoading?: boolean;
 }
 
 // ✅ Use environment variable for API base (same as animeService.ts)
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://animabing.onrender.com/api';
 
+// ✅ SHUFFLE ARRAY FUNCTION - For randomizing content
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 // Helper functions for image optimization
 const optimizeImageUrl = (url: string, width: number, height: number): string => {
   if (!url || !url.includes('cloudinary.com')) return url;
   
   try {
-    // Check if already optimized with our dimensions
     if (url.includes(`w_${width},h_${height},c_fill`)) return url;
     
-    // Remove existing transformations and add optimized ones
     const baseUrl = url.split('/upload/')[0];
     const rest = url.split('/upload/')[1];
     const imagePath = rest.split('/').slice(1).join('/');
@@ -66,8 +81,6 @@ const generateSrcSet = (url: string, baseWidth: number, baseHeight: number): str
 // ✅ Helper function to get random download link
 const getRandomDownloadLink = (downloadLinks: DownloadLink[]): string | null => {
   if (!downloadLinks || downloadLinks.length === 0) return null;
-  
-  // Generate random index
   const randomIndex = Math.floor(Math.random() * downloadLinks.length);
   return downloadLinks[randomIndex].url;
 };
@@ -78,7 +91,6 @@ const generateAnimeKeywords = (anime: Anime): string => {
   
   let keywords = [];
   
-  // Add main keywords based on language and type
   if (anime.subDubStatus) {
     const statuses = anime.subDubStatus.split(',').map(s => s.trim().toLowerCase());
     
@@ -95,7 +107,6 @@ const generateAnimeKeywords = (anime: Anime): string => {
     }
   }
   
-  // Add generic keywords
   keywords.push(
     `watch ${anime.title} online`,
     `${anime.title} free download`,
@@ -104,14 +115,12 @@ const generateAnimeKeywords = (anime: Anime): string => {
     `${anime.title} anime`
   );
   
-  // Add genre keywords
   if (anime.genreList && anime.genreList.length > 0) {
     anime.genreList.forEach(genre => {
       keywords.push(`${anime.title} ${genre.toLowerCase()} anime`, `${genre.toLowerCase()} anime`);
     });
   }
   
-  // Add content type keywords
   if (anime.contentType) {
     if (anime.contentType === 'Movie') {
       keywords.push(`${anime.title} movie`, `watch ${anime.title} movie online`, `${anime.title} anime movie`);
@@ -122,12 +131,10 @@ const generateAnimeKeywords = (anime: Anime): string => {
     }
   }
   
-  // Add year if available
   if (anime.releaseYear) {
     keywords.push(`${anime.title} ${anime.releaseYear}`);
   }
   
-  // Remove duplicates and join
   return [...new Set(keywords)].join(', ');
 };
 
@@ -150,7 +157,7 @@ const generateAnimeStructuredData = (anime: Anime) => {
   };
 };
 
-const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) => {
+const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, onAnimeSelect, isLoading = false }) => {
   const [episodesLoading, setEpisodesLoading] = useState(true);
   const [chaptersLoading, setChaptersLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<number>(1);
@@ -162,6 +169,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
   const [fullAnime, setFullAnime] = useState<Anime | null>(null);
   const [animeLoading, setAnimeLoading] = useState(false);
   const [downloadingItem, setDownloadingItem] = useState<string | null>(null);
+
+  // ✅ STATE FOR MORE LIKE THIS SECTION
+  const [similarContent, setSimilarContent] = useState<Anime[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   // Check content types
   const isManga = anime?.contentType === 'Manga';
@@ -186,12 +197,89 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     return 'Episodes will be added soon!';
   };
 
-  // ✅ UPDATED: FETCH FULL ANIME DETAILS IF NEEDED (FIXED VERSION)
+  // ✅ UPDATED: FETCH SIMILAR CONTENT WITH RANDOMIZATION AND UNIQUE FILTERING
+  const fetchSimilarContent = useCallback(async () => {
+    if (!anime) return;
+
+    try {
+      setSimilarLoading(true);
+      
+      // ✅ Fetch multiple pages to get a larger pool of content
+      const pagePromises = [];
+      const pagesToFetch = 3; // Fetch 3 pages for more variety
+      
+      for (let page = 1; page <= pagesToFetch; page++) {
+        pagePromises.push(
+          getAnimePaginated(page, 24, 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList,slug')
+        );
+      }
+      
+      const pagesData = await Promise.all(pagePromises);
+      const allAnime = pagesData.flat();
+      
+      if (allAnime && allAnime.length > 0) {
+        const currentId = anime.id || anime._id;
+        const contentType = anime.contentType;
+        
+        // ✅ STEP 1: Filter by same content type and remove current anime
+        const filteredByType = allAnime.filter(item => {
+          const itemId = item.id || item._id;
+          return itemId !== currentId && item.contentType === contentType;
+        });
+        
+        // ✅ STEP 2: Remove duplicates by ID
+        const uniqueAnimeMap = new Map();
+        filteredByType.forEach(item => {
+          const itemId = item.id || item._id;
+          if (!uniqueAnimeMap.has(itemId)) {
+            uniqueAnimeMap.set(itemId, item);
+          }
+        });
+        
+        const uniqueAnime = Array.from(uniqueAnimeMap.values());
+        
+        // ✅ STEP 3: Shuffle the array for randomness
+        const shuffledAnime = shuffleArray(uniqueAnime);
+        
+        // ✅ STEP 4: Take first 12 for PC and 6 for mobile
+        const limitedAnime = shuffledAnime.slice(0, 12);
+        
+        // ✅ STEP 5: If we don't have enough of same type, fetch other types as fallback
+        if (limitedAnime.length < 6) {
+          const otherContent = allAnime.filter(item => {
+            const itemId = item.id || item._id;
+            return itemId !== currentId && item.contentType !== contentType;
+          });
+          
+          const shuffledOthers = shuffleArray(otherContent);
+          const additionalItems = shuffledOthers.slice(0, 12 - limitedAnime.length);
+          limitedAnime.push(...additionalItems);
+        }
+        
+        setSimilarContent(limitedAnime);
+      } else {
+        setSimilarContent([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch similar content:', err);
+      setSimilarContent([]);
+    } finally {
+      setSimilarLoading(false);
+    }
+  }, [anime?.id, anime?.contentType]);
+
+  // ✅ INITIAL FETCH FOR SIMILAR CONTENT
+  useEffect(() => {
+    if (anime) {
+      fetchSimilarContent();
+    }
+  }, [anime?.id, anime?.contentType, fetchSimilarContent]);
+
+  // ✅ UPDATED: FETCH FULL ANIME DETAILS IF NEEDED
   useEffect(() => {
     const fetchFullAnimeDetails = async () => {
       if (!anime) return;
 
-      // If we already have complete data, use it
       if (anime.description && anime.genreList && anime.genreList.length > 0) {
         setFullAnime(anime);
         return;
@@ -199,7 +287,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
 
       setAnimeLoading(true);
       try {
-        // ✅ FIXED: Use the correct ID/slug from anime object
         const animeIdentifier = anime.slug || anime._id || anime.id;
         
         if (!animeIdentifier) {
@@ -208,7 +295,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
           return;
         }
 
-        // ✅ FIXED: Use getAnimeByIdOrSlug instead of getAnimeById
         const fields = 'title,thumbnail,releaseYear,status,contentType,subDubStatus,description,genreList,seoTitle,seoDescription,seoKeywords,slug';
         const fullAnimeData = await getAnimeByIdOrSlug(animeIdentifier, fields);
         
@@ -241,25 +327,20 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
       };
     }
 
-    // Generate title
     const seoTitle = displayAnime.seoTitle || 
       `Watch ${displayAnime.title} Online ${displayAnime.subDubStatus ? `in ${displayAnime.subDubStatus}` : ''} | AnimeBing`;
     
-    // Generate description
     const seoDescription = displayAnime.seoDescription || 
       `Watch ${displayAnime.title} online ${displayAnime.subDubStatus ? `in ${displayAnime.subDubStatus}` : ''}. ${
         displayAnime.contentType === 'Movie' ? 'Full movie available' : 'All episodes available'
       } in HD quality. Free streaming and downloads on AnimeBing.`;
     
-    // Generate keywords
     const keywords = displayAnime.seoKeywords || generateAnimeKeywords(displayAnime);
     
-    // ✅ IMPROVED: Generate canonical URL with actual slug
     let canonicalSlug;
     if (displayAnime.slug) {
       canonicalSlug = displayAnime.slug;
     } else if (displayAnime.title) {
-      // Fallback to title-based slug
       canonicalSlug = displayAnime.title.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
@@ -269,7 +350,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     
     const canonicalUrl = `https://animebing.in/detail/${canonicalSlug}`;
     
-    // Generate structured data
     const structuredData = generateAnimeStructuredData(displayAnime);
     
     return {
@@ -316,19 +396,17 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
   // Get available sessions
   const availableSessions = Object.keys(itemsBySession).map(Number).sort((a, b) => a - b);
 
-  // ✅ UPDATED: EPISODES/CHAPTERS FETCH (using animeService functions)
+  // ✅ UPDATED: EPISODES/CHAPTERS FETCH
   useEffect(() => {
     const fetchContent = async () => {
       if (!anime) return;
       try {
         if (isManga) {
           setChaptersLoading(true);
-          // ✅ Use animeService function
           const chaptersData = await getChaptersByMangaId(anime.id || anime._id);
           setChapters(chaptersData);
         } else {
           setEpisodesLoading(true);
-          // ✅ Use animeService function
           const episodesData = await getEpisodesByAnimeId(anime.id || anime._id);
           setEpisodes(episodesData);
         }
@@ -353,7 +431,7 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
     fetchContent();
   }, [anime, isManga]);
 
-  // ✅ UPDATED: Handle download click - RANDOM LINK OPEN IN NEW TAB (NO ALERT)
+  // ✅ UPDATED: Handle download click
   const handleDownloadClick = async (item: Episode | Chapter) => {
     try {
       const itemData = item as any;
@@ -366,14 +444,11 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
         return;
       }
       
-      // Set loading state for this specific item
       setDownloadingItem(itemData._id);
       
-      // ✅ Get random download link
       const randomLink = getRandomDownloadLink(downloadLinks);
       
       if (randomLink) {
-        // ✅ Open random link in new tab (NO ALERT)
         window.open(randomLink, '_blank');
       } else {
         alert('⚠️ No valid download link found!');
@@ -586,10 +661,10 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
             )}
 
             <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 mt-0 border border-slate-700 shadow-xl">
+              {/* ✅ UPDATED: Removed episode count from heading */}
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-base font-bold text-white">
-                  {getContentLabel()}{' '}
-                  {currentSessionItems.length > 0 && `(${currentSessionItems.length})`}
+                  {getContentLabel()}
                 </h2>
               </div>
               {(isManga ? chaptersLoading : episodesLoading) ? (
@@ -637,7 +712,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                              {/* ✅ UPDATED: Only show EP/MOVIE/CHAPTER without numbers */}
                               <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded text-xs font-bold min-w-10 text-center flex-shrink-0">
                                 {isMovie ? 'MOVIE' : (isManga ? 'CHAPTER' : 'EP')}
                               </div>
@@ -781,9 +855,9 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
 
             <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                {/* ✅ UPDATED: Removed episode count from heading */}
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-                  {getContentLabel()}{' '}
-                  {currentSessionItems.length > 0 && `(${currentSessionItems.length})`}
+                  {getContentLabel()}
                 </h2>
                 {availableSessions.length > 1 && (
                   <div className="flex gap-2 flex-wrap">
@@ -851,7 +925,6 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                               <div className="flex items-start sm:items-center gap-4 flex-1">
                                 <div className="flex items-center gap-3">
-                                  {/* ✅ UPDATED: Only show EP/MOVIE/CHAPTER without numbers */}
                                   <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-bold min-w-16 text-center">
                                     {isMovie ? 'MOVIE' : (isManga ? 'CHAPTER' : 'EP')}
                                   </span>
@@ -910,6 +983,88 @@ const AnimeDetailPage: React.FC<Props> = ({ anime, onBack, isLoading = false }) 
                 </>
               )}
             </div>
+
+            {/* ✅ UPDATED: MORE LIKE THIS SECTION FOR PC VIEW - WITH RANDOM & UNIQUE CONTENT */}
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-6">
+                More {displayAnime?.contentType === 'Movie' ? 'Movies' : displayAnime?.contentType === 'Manga' ? 'Manga' : 'Anime'}
+              </h2>
+              
+              {similarLoading ? (
+                <div className="flex justify-center py-12">
+                  <Spinner size="lg" text="Loading similar content..." />
+                </div>
+              ) : similarContent.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="bg-slate-800/50 rounded-2xl p-8 max-w-md mx-auto border border-slate-700">
+                    <h3 className="text-lg font-semibold text-slate-300 mb-2">
+                      No Similar Content Found
+                    </h3>
+                    <p className="text-slate-400">
+                      We couldn't find similar {displayAnime?.contentType?.toLowerCase()} at the moment.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {similarContent.slice(0, 12).map((item, index) => (
+                    <div 
+                      key={item.id || item._id || index} 
+                      className="relative cursor-pointer"
+                      onClick={() => onAnimeSelect(item)}
+                    >
+                      <AnimeCard
+                        anime={item}
+                        onClick={() => {}}
+                        index={index}
+                        showStatus={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ UPDATED: MORE LIKE THIS SECTION FOR MOBILE VIEW - WITH RANDOM & UNIQUE CONTENT */}
+          <div className="lg:hidden mt-8">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-4">
+              More {displayAnime?.contentType === 'Movie' ? 'Movies' : displayAnime?.contentType === 'Manga' ? 'Manga' : 'Anime'}
+            </h2>
+            
+            {similarLoading ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="sm" text="Loading similar content..." />
+              </div>
+            ) : similarContent.length === 0 ? (
+              <div className="text-center py-6">
+                <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                  <h3 className="text-base font-semibold text-slate-300 mb-2">
+                    No Similar Content Found
+                  </h3>
+                  <p className="text-slate-400 text-sm">
+                    We couldn't find similar {displayAnime?.contentType?.toLowerCase()} at the moment.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {similarContent.slice(0, 6).map((item, index) => (
+                  <div 
+                    key={item.id || item._id || index} 
+                    className="relative cursor-pointer"
+                    onClick={() => onAnimeSelect(item)}
+                  >
+                    <AnimeCard
+                      anime={item}
+                      onClick={() => {}}
+                      index={index}
+                      showStatus={true}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

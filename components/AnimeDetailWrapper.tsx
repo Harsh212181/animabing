@@ -1,4 +1,4 @@
-// components/AnimeDetailWrapper.tsx - NEW FILE
+ // components/AnimeDetailWrapper.tsx - UPDATED VERSION
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AnimeDetailPage from './AnimeDetailPage';
@@ -54,6 +54,21 @@ const AnimeDetailWrapper: React.FC = () => {
     navigate(-1);
   };
 
+  // ✅ ADDED: Function to handle anime selection from "More Like This" section
+  const handleAnimeSelect = (selectedAnime: Anime) => {
+    // Get the slug or generate one
+    const slug = selectedAnime.slug || 
+      selectedAnime.title.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    
+    // Navigate to the selected anime's detail page
+    navigate(`/detail/${slug}`, { state: { anime: selectedAnime } });
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Show loading skeleton
   if (loading) {
     return <AnimeDetailSkeleton />;
@@ -86,11 +101,12 @@ const AnimeDetailWrapper: React.FC = () => {
     );
   }
 
-  // Pass data to AnimeDetailPage
+  // ✅ UPDATED: Pass handleAnimeSelect to AnimeDetailPage
   return (
     <AnimeDetailPage
       anime={anime}
       onBack={handleBack}
+      onAnimeSelect={handleAnimeSelect} // ✅ ADDED THIS PROP
       isLoading={loading}
     />
   );
